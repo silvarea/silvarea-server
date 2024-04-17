@@ -5,7 +5,7 @@ namespace Silvarea.Network
 	public class UpdateServer
 	{
 
-		private byte[] _crc;
+		private byte[] _crc = new byte[0];
 
 		public static MemoryStream getRequest(int index, int file)
 		{
@@ -18,10 +18,10 @@ namespace Silvarea.Network
 		private static byte[] getCacheFile(int index, int file)
 		{
 			
-			if (index == 255 && file == 255)
-			{
-				return _crc;
-			}
+			//if (index == 255 && file == 255)
+			//{
+			//	return _crc;
+			//}
 
 			return null;
 
