@@ -55,5 +55,21 @@ namespace Silvarea.Cache
             }
 			return finalBuffer.ToArray();
 		}
-	}
+
+        public void close()
+        {
+			_dataFile.Close();
+			_indexFile.Close();
+
+		}
+
+		public int getLength()
+		{
+			return (int) _indexFile.Length;
+		}
+
+		
+
+    }
+
 }
