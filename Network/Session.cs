@@ -1,6 +1,9 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Threading;
 
 namespace Silvarea.Network
 {
@@ -39,9 +42,9 @@ namespace Silvarea.Network
 		private void OnDataReceive(IAsyncResult result)
 		{
 			EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
-			int received = Socket.EndReceiveFrom(result, ref clientEndPoint);
-
-			switch (CurrentState)
+			int received = Socket.EndReceiveFrom(result, ref clientEndPoint);//TODO System.Net.Sockets.SocketException - Message = An existing connection was forcibly closed by the remote host. - Source = System.Net.Sockets; after closing client- need to handle dropped connections
+ 
+            switch (CurrentState)
 			{
 				case RS2ConnectionState.INITIAL:
 				case RS2ConnectionState.UPDATE:
