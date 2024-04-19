@@ -33,10 +33,29 @@ namespace Silvarea.Cache
 
         public static MemoryStream getRequest(int index, int file)
         {
-
             var cache = getCacheFile(index, file);
-
-            return new MemoryStream(cache);
+            MemoryStream buffer = new MemoryStream((cache.Length - 2) + ((cache.Length - 2) / 511) + 8);
+            BinaryWriter bufferWriter = new BinaryWriter(buffer);
+            bufferWriter.Write((byte) index);
+            bufferWriter.Write((short) file);
+            int len = (((cache[1] & 0xff) << 24) + ((cache[2] & 0xff) << 16) + ((cache[3] & 0xff) << 8) + (cache[4] & 0xff)) + 9;
+            if (cache[0] == 0)
+            {
+                len -= 4;
+            }
+            int c = 3;
+            for (int i = 0; i < len; i++)
+            {
+                if (c == 512)
+                {
+                    bufferWriter.Write((byte) 0xFF);
+                    c = 1;
+                }
+                bufferWriter.Write(cache[i]);
+                c++;
+            }
+            buffer.Close();
+            return buffer;
         }
 
         private static byte[] getCacheFile(int index, int file)
@@ -47,7 +66,7 @@ namespace Silvarea.Cache
             	return _crc;
             }
 
-            return null;
+            return Cache.getCacheFile(index, file);
 
         }
 
