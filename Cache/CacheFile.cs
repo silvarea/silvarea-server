@@ -8,13 +8,13 @@ namespace Silvarea.Cache
 {
     public class CacheFile
     {
-        private Compression _compression { get; set;}
+        public Compression _Compression { get; set;}
 
-        private MemoryStream _data { get; set;}
+        public MemoryStream Data { get; set;}
 
-        private int _uncompressedSize { get; set;}
+        public int UncompressedSize { get; set;}
 
-        private int _cacheSize { get; set;}
+        public int CacheSize { get; set;}
 
         public enum Compression
         {
@@ -28,10 +28,10 @@ namespace Silvarea.Cache
 
         public CacheFile(MemoryStream data, int compression, int uncompressedSize, int cacheSize)
         {
-            _data = data;
-            _compression = ConfigureCompression(compression);
-            _uncompressedSize = uncompressedSize;
-            _cacheSize = cacheSize;
+            Data = data;
+            _Compression = ConfigureCompression(compression);
+            UncompressedSize = uncompressedSize;
+            CacheSize = cacheSize;
         }
 
         public Compression ConfigureCompression(int compression)
@@ -50,7 +50,7 @@ namespace Silvarea.Cache
 
         public byte[] toByteArray()
         {
-            return _data.ToArray();
+            return Data.ToArray();
         }
 
     }

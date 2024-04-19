@@ -11,4 +11,8 @@
     <Folder Include="Game\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+  </ItemGroup>
+
 </Project>

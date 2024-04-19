@@ -1,4 +1,7 @@
 ﻿using System.Net.Http.Headers;
+using System.IO;
+using System.Runtime.Intrinsics.Arm;
+using System.IO.Compression;
 
 namespace Silvarea.Cache
 {
@@ -9,9 +12,22 @@ namespace Silvarea.Cache
 
         public static void init()
         {
-            //BufferedStream data = new BufferedStream();
-            //BinaryWriter buffer = new BinaryWriter(data);
-            //buffer.(Cache.getIndex(255).getLength() * 8);
+            MemoryStream stream = new MemoryStream(4048);
+            BinaryWriter buffer = new BinaryWriter(stream);
+            int length = Cache.getIndex(255).getLength();
+            buffer.Write((byte) 0);
+            buffer.Write((uint) length);
+            new CRC32();
+            for (int file = 0; file < length; file++) 
+            {
+                uint hash = CRC32.CalculateCrc32(Cache.getIndex(255).getFile(file));
+                buffer.Write((int) hash);
+                MemoryStream crcDecompressed = new MemoryStream(new FileDecompressor(Cache.getIndex(255).getFile(file)).decompress());
+                BinaryReader crcReader = new BinaryReader(crcDecompressed);
+                int version = crcReader.Read();
+                int revision = version >= 6 ? crcReader.ReadInt32() : 0;
+                buffer.Write((uint) revision);
+            }
 
         }
 
@@ -20,7 +36,7 @@ namespace Silvarea.Cache
 
             var cache = getCacheFile(index, file);
 
-            return new MemoryStream();
+            return new MemoryStream(cache);
         }
 
         private static byte[] getCacheFile(int index, int file)
@@ -34,5 +50,6 @@ namespace Silvarea.Cache
             return null;
 
         }
+
     }
 }
