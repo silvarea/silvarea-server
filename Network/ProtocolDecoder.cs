@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Silvarea.Cache;
 
 namespace Silvarea.Network
 {
@@ -46,7 +47,9 @@ namespace Silvarea.Network
 						var bytesToFlip = BitConverter.GetBytes(binaryReader.ReadInt16());
 						Array.Reverse(bytesToFlip, 0, bytesToFlip.Length);
 						var fileNumber = BitConverter.ToInt16(bytesToFlip, 0);
-
+						if (requestType < 2) {//non-urgent and urgent requests
+							session.Stream.Write(UpdateServer.getRequest(indexNumber, fileNumber).ToArray());
+						}
 						Console.WriteLine($"Request Type: {requestType} Index Number: {indexNumber} File Number: {fileNumber}");
 
 					}

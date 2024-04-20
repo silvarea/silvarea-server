@@ -1,4 +1,5 @@
 ﻿using Silvarea.Network;
+using Silvarea.Cache;
 
 namespace Silvarea
 {
@@ -7,6 +8,7 @@ namespace Silvarea
 
 		public static void Main()
 		{
+			UpdateServer.init("../../../data/cache");
 			SocketManager socketManager = new SocketManager();
 			socketManager.Start();
 		}

@@ -13,8 +13,6 @@ namespace Silvarea.Cache
 
 		public static CacheIndex[] Indices { get; set; }
 
-		public Cache() { }
-
 		public static byte[] getCacheFile(int index, int file) {
 
 			if (index == 255)

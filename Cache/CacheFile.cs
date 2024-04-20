@@ -12,9 +12,9 @@ namespace Silvarea.Cache
 
         public MemoryStream Data { get; set;}
 
-        public int UncompressedSize { get; set;}
+        public uint UncompressedSize { get; set;}
 
-        public int CacheSize { get; set;}
+        public uint CacheSize { get; set;}
 
         public enum Compression
         {
@@ -26,7 +26,7 @@ namespace Silvarea.Cache
 
         }
 
-        public CacheFile(MemoryStream data, int compression, int uncompressedSize, int cacheSize)
+        public CacheFile(MemoryStream data, int compression, uint uncompressedSize, uint cacheSize)
         {
             Data = data;
             _Compression = ConfigureCompression(compression);
