@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Silvarea.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.PortableExecutable;
@@ -26,33 +27,31 @@ namespace Silvarea.Cache
 
 		public byte[] getFile(int file)
 		{
-			Console.Write("Processing file: " + file);
-            BufferedStream indexStream = new BufferedStream(_indexFile, 6);
-            indexStream.Seek(file * 6, SeekOrigin.Begin);
-            BinaryReader indexReader = new BinaryReader(indexStream);
-			Console.Write("Filesize = " + indexStream.Length);
-            int fileSize = (indexReader.ReadByte() << 16) | (indexReader.ReadByte() << 8) | (indexReader.ReadByte());
-			int fileSector = (indexReader.ReadByte() << 16) | (indexReader.ReadByte() << 8) | (indexReader.ReadByte());
+			Console.WriteLine($"Processing file: {file}");
+
+			Packet index = new Packet(_indexFile);
+            index.Seek(file * 6, SeekOrigin.Begin);
+
+			Console.WriteLine($"Filesize = {index.Length}");
+
+			int fileSize = index.g3();
+			int fileSector = index.g3();
 			int remainingBytes = fileSize;
 			int sector = fileSector;
-			Console.Write("Fileinfo: filesize = " + fileSize + ", fileSector = " + fileSector);
+			
+			Console.WriteLine($"Fileinfo: filesize = {fileSize}, fileSector = {fileSector}");
+
 			MemoryStream finalBuffer = new MemoryStream(fileSize);
+
 			while (remainingBytes > 0)
 			{
-				BufferedStream mainBlockStream = new BufferedStream(_dataFile, 520);
-				mainBlockStream.Seek(sector * 520, SeekOrigin.Begin);
-				BinaryReader mainBlock = new BinaryReader(mainBlockStream);
-                //int nextFile = (mainBlock.ReadUInt16() & 0xffff) / 256;//These being divided by 256 is a band-aid. We're reading the short incorrectly somehow. TODO fix later
-                byte[] nextFileData = mainBlock.ReadBytes(2);
-                Array.Reverse(nextFileData);
-                int nextFile = BitConverter.ToUInt16(nextFileData);
-                //int currentSector = (mainBlock.ReadUInt16() & 0xffff) / 256;//Hey, brainblast idiot, it's big endian. That's why it's not affecting bytes.
-                byte[] currentSectorData = mainBlock.ReadBytes(2);
-                Array.Reverse(currentSectorData);
-                int currentSector = BitConverter.ToUInt16(currentSectorData);
-                int nextSector = (mainBlock.ReadByte() << 16) | (mainBlock.ReadByte() >> 8) | (mainBlock.ReadByte());
-				int nextCache = mainBlock.ReadByte();
-				Console.WriteLine("nextFile = " + nextFile + ", currentSector = " + currentSector + ", nextSector = " + nextSector + ", nextCache = " + nextCache);
+				Packet mainBlock = new Packet(_dataFile);
+				mainBlock.Seek(sector * 520, SeekOrigin.Begin);
+				int nextFile = mainBlock.g2();
+				int currentSector = mainBlock.g2();
+				int nextSector = mainBlock.g3();
+				int nextCache = mainBlock.g1();
+				//Console.WriteLine("nextFile = " + nextFile + ", currentSector = " + currentSector + ", nextSector = " + nextSector + ", nextCache = " + nextCache);
 				int remaining = remainingBytes;
 				if (remaining > 512)
 				{
@@ -78,9 +77,5 @@ namespace Silvarea.Cache
 		{
 			return (int) _indexFile.Length;
 		}
-
-		
-
     }
-
 }

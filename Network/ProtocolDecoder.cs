@@ -15,20 +15,23 @@ namespace Silvarea.Network
 
 		public static void Decode(Session session, int size)
 		{
+			// TODO: Fix this trash
+			byte opcode = 0;
+			byte[] data = session.inBuffer;
+			if (session.CurrentState != RS2ConnectionState.UPDATE)
+			{
+                opcode = session.inBuffer[0];
+                data = new byte[session.inBuffer.Length - 1];
+                Array.Copy(session.inBuffer, 1, data, 0, data.Length);
+            }
+            Packet packet = new Packet(opcode, data);
 
-			MemoryStream memoryStream = new MemoryStream(session.inBuffer, 0, session.inBuffer.Length);
-			BinaryReader binaryReader = new BinaryReader(memoryStream, Encoding.UTF8);
-
-			switch(session.CurrentState) 
+            switch (session.CurrentState) 
 			{
 				case RS2ConnectionState.INITIAL:
-					var opcode = binaryReader.ReadByte();
-
 					if (opcode == (byte)ProtocolOpcode.UPDATE)
 					{
-						var bytesToFlip = BitConverter.GetBytes(binaryReader.ReadInt32());
-						Array.Reverse(bytesToFlip, 0, bytesToFlip.Length);
-						var versionId = BitConverter.ToInt32(bytesToFlip, 0);
+						var versionId = packet.g4();
 
 						// TODO: Don't hardcode this
 						if (versionId == 410)
@@ -41,20 +44,19 @@ namespace Silvarea.Network
 				case RS2ConnectionState.UPDATE:
 					if (size >= 4)
 					{
-						var requestType = binaryReader.ReadByte();
-						var indexNumber = binaryReader.ReadByte();
+                        var requestType = packet.g1();
+						var indexNumber = packet.g1();
+						var fileNumber = packet.g2();
 
-						var bytesToFlip = BitConverter.GetBytes(binaryReader.ReadInt16());
-						Array.Reverse(bytesToFlip, 0, bytesToFlip.Length);
-						var fileNumber = BitConverter.ToInt16(bytesToFlip, 0);
-						if (requestType < 2) {//non-urgent and urgent requests
+						if (requestType < 2) //non-urgent and urgent requests
+						{ 
 							session.Stream.Write(UpdateServer.getRequest(indexNumber, fileNumber).ToArray());
 						}
 						Console.WriteLine($"Request Type: {requestType} Index Number: {indexNumber} File Number: {fileNumber}");
-
-					}
+                    }
 					break;
-			}
-		}
+            }
+            session.Stream.Flush();
+        }
 	}
 }

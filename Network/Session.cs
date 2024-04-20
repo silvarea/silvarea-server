@@ -34,9 +34,18 @@ namespace Silvarea.Network
 
 		private void Listen()
 		{
-			// Todo: Get that IP and port from a config file.
-			EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
-			Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
+
+			try
+			{
+				// Todo: Get that IP and port from a config file.
+				EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
+				Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
+			} 
+			catch (SocketException ex) 
+			{
+				Listen();			
+			}
+			
 		}
 
 		private void OnDataReceive(IAsyncResult result)

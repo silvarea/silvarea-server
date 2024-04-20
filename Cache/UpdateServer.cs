@@ -4,6 +4,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.IO.Compression;
 using System.Threading.Tasks.Dataflow;
 using System.Buffers.Binary;
+using Silvarea.Network;
 
 namespace Silvarea.Cache
 {
@@ -14,7 +15,7 @@ namespace Silvarea.Cache
 
         public static void init(string path)
         {
-            Console.Write("Loading cache...");
+            Console.WriteLine("Loading cache...");
             int total = 0;
             foreach (string filePath in Directory.GetFiles(path))
             {
@@ -34,27 +35,26 @@ namespace Silvarea.Cache
                 Cache.Indices[file] = new CacheIndex(path, file, Cache.Index255);
             }
 
-            MemoryStream stream = new MemoryStream(4048);
-            BinaryWriter buffer = new BinaryWriter(stream);
+            byte[] data = new byte[4048];
+            Packet packet = new Packet((byte) 0, data);
+
             int length = Cache.getIndex(255).getLength() / 6; //wasn't dividing this by 6
-            buffer.Write((byte) 0);
-            buffer.Write((uint) length * 8); //wasn't multiplying this by 8
+            packet.p1(0);//this is creating the crc file we read back for 255/255 request, this is writing in little endian. Make big endian all the way down to ensure data integrity
+            packet.p4(length * 4); //multiply by 8 for 460+
             new CRC32();
             for (int file = 0; file < length; file++) 
             {
                 int hash = (int)CRC32.CalculateCrc32(Cache.getIndex(255).getFile(file));
                 Console.WriteLine("CRC32 hash = " + hash);
-                buffer.Write((int) hash);
-                MemoryStream crcDecompressed = new MemoryStream(new FileDecompressor(Cache.getIndex(255).getFile(file)).decompress());
-                BinaryReader crcReader = new BinaryReader(crcDecompressed);
-                int version = crcReader.ReadByte();
+                packet.p4(hash);
+                Packet crcDecompressed = new Packet(new FileDecompressor(Cache.getIndex(255).getFile(file)).decompress());
+                int version = crcDecompressed.g1();
                 Console.WriteLine("file: " + file + ", version: " + version);
-                int revision = version >= 6 ? crcReader.ReadInt32() : 0;
-                buffer.Write((uint) revision);
+                int revision = version >= 6 ? crcDecompressed.g4() : 0;//might be the change we have to make for 410
+                //packet.p4(revision);//Only send in 460+
             }
             //stream.Write(new byte[4048 - stream.Length], (stream.Length - 1), (4048 - stream.Length));
-            Console.WriteLine("should be 4048: " + stream.Capacity);
-            _crc = stream.ToArray();
+            _crc = packet.toByteArray();
             Array.Resize(ref _crc, 4048);
             Console.WriteLine("should also be 4048: " + _crc.Length);
         }
@@ -63,17 +63,19 @@ namespace Silvarea.Cache
         {
             var cache = getCacheFile(index, file);
             Console.WriteLine("Reading file " + file + " index " + index + " now, size = " + cache.Length);
-            MemoryStream buffer = new MemoryStream((cache.Length - 2) + ((cache.Length - 2) / 511) + 8);
-            BinaryWriter bufferWriter = new BinaryWriter(buffer);
-            Console.WriteLine("bufferlen = " + buffer.Capacity);
-            bufferWriter.Write((byte) index);
-            bufferWriter.Write((short) file);
+            byte[] data = new byte[(cache.Length - 2) + ((cache.Length - 2) / 511) + 8];
+            Packet packet = new Packet(0, data);
+            //MemoryStream buffer = new MemoryStream((cache.Length - 2) + ((cache.Length - 2) / 511) + 8);
+            //BinaryWriter bufferWriter = new BinaryWriter(buffer);
+            //Console.WriteLine("bufferlen = " + packet.Capacity);
+            packet.p1((byte) index);
+            packet.p2((short) file);
             Console.WriteLine(cache[1] + ", " + cache[2] + ", " + cache[3] + ", " + cache[4]);
             int len = 
-                     (((cache[4] & 0xff) << 24) +
-                     ((cache[3] & 0xff) << 16) +
-                     ((cache[2] & 0xff) << 8) +
-                     (cache[1] & 0xff)) + 9;//Why the fuck do I have to reverse this for it to work? There's gotta be something happening before this to screw that up. Makes no sense.
+                     (((cache[1] & 0xff) << 24) +
+                     ((cache[2] & 0xff) << 16) +
+                     ((cache[3] & 0xff) << 8) +
+                     (cache[4] & 0xff)) + 9;//Why the fuck do I have to reverse this for it to work? There's gotta be something happening before this to screw that up. Makes no sense.
             
             if (cache[0] == 0)
             {
@@ -86,14 +88,14 @@ namespace Silvarea.Cache
             {
                 if (c == 512)
                 {
-                    bufferWriter.Write((byte) 0xFF);
+                    packet.p1((byte) 0xFF);
                     c = 1;
                 }
-                bufferWriter.Write((byte)cache[i]);
+                //Console.WriteLine("testcrc: " + (sbyte)cache[i]);
+                packet.p1((sbyte) cache[i]);
                 c++;
             }
-            buffer.Close();
-            return buffer;
+            return new MemoryStream(packet.toByteArray());
         }
 
         private static byte[] getCacheFile(int index, int file)

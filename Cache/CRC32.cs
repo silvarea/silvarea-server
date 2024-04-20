@@ -40,7 +40,7 @@ namespace Silvarea.Cache
             foreach (byte b in data)
             {
                 byte index = (byte)(((crc) & 0xff) ^ b);
-                crc = (_table[index] ^ (crc >> 8));
+                crc = ((uint)_table[index] ^ (crc >> 8));
             }
             return ~crc;
         }

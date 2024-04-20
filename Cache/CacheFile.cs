@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Silvarea.Network;
 
 namespace Silvarea.Cache
 {
@@ -12,9 +13,9 @@ namespace Silvarea.Cache
 
         public MemoryStream Data { get; set;}
 
-        public uint UncompressedSize { get; set;}
+        public int UncompressedSize { get; set;}
 
-        public uint CacheSize { get; set;}
+        public int CacheSize { get; set;}
 
         public enum Compression
         {
@@ -26,7 +27,7 @@ namespace Silvarea.Cache
 
         }
 
-        public CacheFile(MemoryStream data, int compression, uint uncompressedSize, uint cacheSize)
+        public CacheFile(MemoryStream data, int compression, int uncompressedSize, int cacheSize)
         {
             Data = data;
             _Compression = ConfigureCompression(compression);
@@ -50,7 +51,7 @@ namespace Silvarea.Cache
 
         public byte[] toByteArray()
         {
-            return Data.ToArray();
+            return Data.ToArray();//Data.toByteArray();
         }
 
     }
