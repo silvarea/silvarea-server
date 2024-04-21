@@ -34,7 +34,6 @@ namespace Silvarea.Cache
             {
                 cacheSize = uncompressedSize;
             }
-            Console.WriteLine("Decompressing file - size = " + cacheSize + ", uncompressed = " + uncompressedSize + ", compression type = " + compression);
             _file = new CacheFile(buffer, compression, uncompressedSize, cacheSize);
         }
 
@@ -51,43 +50,35 @@ namespace Silvarea.Cache
                 case CacheFile.Compression.BZIP: //Jagex uses a headerless BZip2 compression, so every BZip2 package I tried gave Invalid Header errors. Forced to implement custom decompression. :( I guess at least it keeps 3rd party packages out of engine so far.
                     Console.WriteLine("Compression type: BZIP");
                     byte[] bzipHeader = new byte[] {(byte)'B', (byte)'Z', (byte)'h', (byte)'1'};
-                    byte[] data = _file.toByteArray().Skip(5).ToArray();//maybe 9?
-
-
+                    byte[] data = _file.toByteArray().Skip(5).ToArray();
                     MemoryStream stream = new MemoryStream(data);
                     Console.WriteLine("streamlen: " + stream.Length);
                     stream.Write(bzipHeader, 0, bzipHeader.Length);
                     stream.Seek(0, SeekOrigin.Begin);
                     BZip2InputStream bz2decompress = new BZip2InputStream(stream);
-                    //Console.WriteLine("bzipd len = " + bz2decompress.);
                     bz2decompress.Read(newData);
-					//finish this, idiot
+                    bz2decompress.Close();
 					break;
                 case CacheFile.Compression.GZIP:
                     Console.WriteLine("Compression type: GZIP");
                     byte[] gzipData = _file.toByteArray().Skip(9).ToArray();
                     MemoryStream gzipStream = new MemoryStream(gzipData);
-                    GZipStream gzdecompress = new GZipStream(gzipStream, CompressionMode.Decompress);
-                    gzdecompress.Read(newData, 0, newData.Length);
+                    try
+                    {
+                        GZipStream gzdecompress = new GZipStream(gzipStream, CompressionMode.Decompress);
+                        int totalRead = 0, bytesRead;
+                        while ((bytesRead = gzdecompress.Read(newData, totalRead, newData.Length - totalRead)) > 0)
+                        {
+                            totalRead += bytesRead;
+                        }
+                        gzdecompress.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.StackTrace);
+                    }
                     break;
             }
-
-
-            var directory = Path.GetDirectoryName($"C:\\Users\\Brian\\Testing\\{_file.UncompressedSize}.txt");
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-            //File.WriteAllBytes(directory, newData);
-
-            FileStream fs = new FileStream(directory, FileMode.Create);
-            using (StreamWriter writer = new StreamWriter(fs))
-            {
-                writer.Write(newData);
-            }
-            fs.Close();
-
-			//Console.WriteLine("decomp'd data: " + (sbyte)newData[10] + ", " + (sbyte)newData[11] + ", " + (sbyte)newData[12] + ", " + (sbyte)newData[13] + ", " + (sbyte)newData[14]);
 			return newData;
         }
 

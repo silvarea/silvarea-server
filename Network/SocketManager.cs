@@ -31,13 +31,12 @@ namespace Silvarea.Network
 
 		public void Listen() 
 		{
-			Console.WriteLine("Waiting for connection...");
 			Socket clientSocket = _socket.Accept();
-
 			var session = sessions.Find(s => clientSocket == s.Socket);
 
 			if (session == null)
 			{
+				Console.Write("New connection!");
 				session = new Session(clientSocket);
 				sessions.Add(session);
 				session.Start();

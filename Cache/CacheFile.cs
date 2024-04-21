@@ -51,7 +51,7 @@ namespace Silvarea.Cache
 
         public byte[] toByteArray()
         {
-            return Data.ToArray();//Data.toByteArray();
+            return Data.ToArray();
         }
 
     }

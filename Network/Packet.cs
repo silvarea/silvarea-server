@@ -39,7 +39,7 @@ namespace Silvarea.Network
 
         private void initPacket(byte[] data)
 		{
-            _stream = new BufferedStream(new MemoryStream(data));
+			_stream = new BufferedStream(new MemoryStream(data));
             if(_stream.CanRead) _streamReader = new BinaryReader(_stream);
             if(_stream.CanWrite) _streamWriter = new BinaryWriter(_stream);
         }
@@ -178,7 +178,8 @@ namespace Silvarea.Network
 
 		public byte[] toByteArray()
 		{
-			byte[] data = new byte[_stream.BufferSize];
+			//byte[] data = new byte[_stream.BufferSize]; //NO! BAD PROPERTY! BAD!
+			byte[] data = new byte[_stream.Length];
 			_stream.Position = 0;
 			_stream.Read(data, 0, data.Length);
 			return data;

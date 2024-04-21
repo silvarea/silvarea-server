@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Sockets;
+using System.Text;
 using Silvarea.Cache;
 
 namespace Silvarea.Network
@@ -13,7 +14,9 @@ namespace Silvarea.Network
 	public class ProtocolDecoder
 	{
 
-		public static void Decode(Session session, int size)
+		static int temp = 0;
+
+        public static void Decode(Session session, int size)
 		{
 			// TODO: Fix this trash
 			byte opcode = 0;
@@ -47,12 +50,10 @@ namespace Silvarea.Network
                         var requestType = packet.g1();
 						var indexNumber = packet.g1();
 						var fileNumber = packet.g2();
-
-						if (requestType < 2) //non-urgent and urgent requests
-						{ 
-							session.Stream.Write(UpdateServer.getRequest(indexNumber, fileNumber).ToArray());
+						if (requestType < 2) //0 = non-urgent, 1 = urgent cache request
+						{
+							session.Stream.Write(UpdateServer.getRequest(indexNumber, fileNumber));
 						}
-						Console.WriteLine($"Request Type: {requestType} Index Number: {indexNumber} File Number: {fileNumber}");
                     }
 					break;
             }

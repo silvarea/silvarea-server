@@ -27,20 +27,12 @@ namespace Silvarea.Cache
 
 		public byte[] getFile(int file)
 		{
-			Console.WriteLine($"Processing file: {file}");
-
 			Packet index = new Packet(_indexFile);
             index.Seek(file * 6, SeekOrigin.Begin);
-
-			Console.WriteLine($"Filesize = {index.Length}");
-
 			int fileSize = index.g3();
 			int fileSector = index.g3();
 			int remainingBytes = fileSize;
 			int sector = fileSector;
-			
-			Console.WriteLine($"Fileinfo: filesize = {fileSize}, fileSector = {fileSector}");
-
 			MemoryStream finalBuffer = new MemoryStream(fileSize);
 
 			while (remainingBytes > 0)
@@ -51,7 +43,6 @@ namespace Silvarea.Cache
 				int currentSector = mainBlock.g2();
 				int nextSector = mainBlock.g3();
 				int nextCache = mainBlock.g1();
-				//Console.WriteLine("nextFile = " + nextFile + ", currentSector = " + currentSector + ", nextSector = " + nextSector + ", nextCache = " + nextCache);
 				int remaining = remainingBytes;
 				if (remaining > 512)
 				{
