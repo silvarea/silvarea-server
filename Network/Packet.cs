@@ -178,8 +178,7 @@ namespace Silvarea.Network
 
 		public byte[] toByteArray()
 		{
-			//byte[] data = new byte[_stream.BufferSize]; //NO! BAD PROPERTY! BAD!
-			byte[] data = new byte[_stream.Length];
+			byte[] data = new byte[Position];
 			_stream.Position = 0;
 			_stream.Read(data, 0, data.Length);
 			return data;

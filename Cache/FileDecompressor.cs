@@ -39,7 +39,6 @@ namespace Silvarea.Cache
 
         public byte[] decompress()
         {
-            Console.WriteLine("Trying to create byte array of size: " + _file.CacheSize);
             byte[] newData = new byte[_file.CacheSize];
             switch (_file._Compression)
             {
@@ -52,7 +51,6 @@ namespace Silvarea.Cache
                     byte[] bzipHeader = new byte[] {(byte)'B', (byte)'Z', (byte)'h', (byte)'1'};
                     byte[] data = _file.toByteArray().Skip(5).ToArray();
                     MemoryStream stream = new MemoryStream(data);
-                    Console.WriteLine("streamlen: " + stream.Length);
                     stream.Write(bzipHeader, 0, bzipHeader.Length);
                     stream.Seek(0, SeekOrigin.Begin);
                     BZip2InputStream bz2decompress = new BZip2InputStream(stream);

@@ -6,7 +6,7 @@ namespace Silvarea.Network
 	public class SocketManager
 	{
 
-		public List<Session> sessions = new List<Session>();
+		public static List<Session> sessions = new List<Session>();
 
 		private IPAddress _address;
 		private IPEndPoint _endpoint;
@@ -32,15 +32,26 @@ namespace Silvarea.Network
 		public void Listen() 
 		{
 			Socket clientSocket = _socket.Accept();
-			var session = sessions.Find(s => clientSocket == s.Socket);
-
+			Console.WriteLine("New connection type: " + clientSocket.SocketType);
+			//var session = sessions.Find(s => clientSocket == s.Socket);
+			var session = sessions.Find(s => clientSocket.RemoteEndPoint.Equals(s.EndPoint));
 			if (session == null)
 			{
-				Console.Write("New connection!");
 				session = new Session(clientSocket);
 				sessions.Add(session);
 				session.Start();
+			} else
+			{
+				session.Socket = clientSocket;
+				session.Start();
+				Console.WriteLine("Continued Connection!");//notice how this never happens? lol.
 			}
+		}
+
+		public static void Disconnect(Session s)
+		{
+            s.Socket.Disconnect(false);
+            sessions.Remove(s);
 		}
 
 		public void Close() 

@@ -52,7 +52,7 @@ namespace Silvarea.Cache
                 //packet.p4(revision);//Only send in 460+
             }
             _crc = packet.toByteArray();
-            Array.Resize(ref _crc, 4048);
+            //Array.Resize(ref _crc, 4048);
         }
 
         public static byte[] getRequest(int index, int file)

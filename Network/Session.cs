@@ -35,29 +35,47 @@ namespace Silvarea.Network
 			Listen();
 		}
 
-		private void Listen()
-		{
+        private void Listen()
+        {
 
-			try
-			{
+            try
+            {
                 // Todo: Get that IP and port from a config file.
                 EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
-				Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
-			} 
-			catch (SocketException ex) 
-			{
-				Console.WriteLine(ex.ToString());
-				Listen();			
-			}
-			
-		}
+                Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
+            }
+            catch (SocketException ex)
+            {
+                Console.WriteLine(ex.ToString());
+                //Listen();
+            }
 
-		private void OnDataReceive(IAsyncResult result)
+        }
+
+        private void OnDataReceive(IAsyncResult result)
 		{
-			EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
+			//EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
+			EndPoint clientEndPoint = Socket.RemoteEndPoint;
 
-			int received = Socket.EndReceiveFrom(result, ref clientEndPoint);//TODO System.Net.Sockets.SocketException - Message = An existing connection was forcibly closed by the remote host. - Source = System.Net.Sockets; after closing client- need to handle dropped connections
- 
+			if (clientEndPoint == null)
+				return;
+
+			int received = 0;
+			try
+			{
+
+				received = Socket.EndReceiveFrom(result, ref clientEndPoint);//TODO System.Net.Sockets.SocketException - Message = An existing connection was forcibly closed by the remote host. - Source = System.Net.Sockets; after closing client- need to handle dropped connections
+			} catch (Exception ex)
+			{
+				Console.WriteLine("Some error: " + ex.Message);
+                SocketManager.Disconnect(this);
+				return;
+			}
+			if (received == 0)
+			{
+				return;
+			}
+
             switch (CurrentState)
 			{
 				case RS2ConnectionState.INITIAL:
@@ -73,6 +91,7 @@ namespace Silvarea.Network
 			{
 				Listen();
 			}
+			//return;
 		}
 	}
 }
