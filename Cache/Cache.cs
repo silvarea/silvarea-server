@@ -13,8 +13,6 @@ namespace Silvarea.Cache
 
 		public static CacheIndex[] Indices { get; set; }
 
-		public Cache() { }
-
 		public static byte[] getCacheFile(int index, int file) {
 
 			if (index == 255)
@@ -23,6 +21,15 @@ namespace Silvarea.Cache
 			}
 			
 			return Indices[index].getFile(file); 
+		}
+
+		public static CacheIndex getIndex(int index)
+		{
+			if (index == 255)
+			{
+				return Index255;
+			}
+			return Indices[index];
 		}
 
 	}

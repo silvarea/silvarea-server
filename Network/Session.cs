@@ -1,12 +1,17 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Threading;
 
 namespace Silvarea.Network
 {
 	public class Session
 	{
 		public Socket Socket {  get; set; }
+
+		public EndPoint EndPoint { get; set; }
 
 		public NetworkStream Stream { get; set; }
 
@@ -21,6 +26,7 @@ namespace Silvarea.Network
 		{
 			CurrentState = RS2ConnectionState.INITIAL;
 			Socket = socket;
+			EndPoint = Socket.RemoteEndPoint;
 			Stream = new NetworkStream(socket, ownsSocket: true);
 		}
 
@@ -29,26 +35,54 @@ namespace Silvarea.Network
 			Listen();
 		}
 
-		private void Listen()
-		{
-			// Todo: Get that IP and port from a config file.
-			EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
-			Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
-		}
+        private void Listen()
+        {
 
-		private void OnDataReceive(IAsyncResult result)
-		{
-			EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
-			int received = Socket.EndReceiveFrom(result, ref clientEndPoint);
+            try
+            {
+                // Todo: Get that IP and port from a config file.
+                EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
+                Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
+            }
+            catch (SocketException ex)
+            {
+                Console.WriteLine(ex.ToString());
+                //Listen();
+            }
 
-			switch (CurrentState)
+        }
+
+        private void OnDataReceive(IAsyncResult result)
+		{
+			//EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
+			EndPoint clientEndPoint = Socket.RemoteEndPoint;
+
+			if (clientEndPoint == null)
+				return;
+
+			int received = 0;
+			try
+			{
+
+				received = Socket.EndReceiveFrom(result, ref clientEndPoint);//TODO System.Net.Sockets.SocketException - Message = An existing connection was forcibly closed by the remote host. - Source = System.Net.Sockets; after closing client- need to handle dropped connections
+			} catch (Exception ex)
+			{
+				Console.WriteLine("Some error: " + ex.Message);
+                SocketManager.Disconnect(this);
+				return;
+			}
+			if (received == 0)
+			{
+				return;
+			}
+
+            switch (CurrentState)
 			{
 				case RS2ConnectionState.INITIAL:
 				case RS2ConnectionState.UPDATE:
 					ProtocolDecoder.Decode(this, received);
 					break;
 			}
-
 			if (result.CompletedSynchronously)
 			{
 				Task.Run(Listen);
@@ -57,6 +91,7 @@ namespace Silvarea.Network
 			{
 				Listen();
 			}
+			//return;
 		}
 	}
 }
