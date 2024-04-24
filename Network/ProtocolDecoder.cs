@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Text;
 using Silvarea.Cache;
+using Silvarea.Game.IO;
 using Silvarea.Utility;
 
 namespace Silvarea.Network
@@ -104,14 +105,19 @@ namespace Silvarea.Network
 				{
                     Console.WriteLine("second check - version correct");
                     Boolean isLowMemory = packet.g1() == 1;
-                    for (int i = 0; i < 24; i++)
-                    {
-                        packet.g1(); //not really sure what this is, needs investigation
-                    }
 
                     for (int i = 0; i < 13; i++)//this obviously changes with revision, but can stay in engine because we can derive it from Update Server
                     {
                         packet.g4(); //something to do with cache indices, I think it's CRC32 checksum return verification?? Will read back and see.
+                    }
+
+                    /** Okay here's what's going on here
+                     * first 4 ints are Isaac seed from client (woohoo!)
+                     * 
+                     */
+                    for (int i = 0; i < 24; i++)
+                    {
+                        packet.g1(); //not really sure what this is, needs investigation
                     }
 
                     int something = packet.g1(); //dunno man, but we're about to check it
@@ -126,17 +132,15 @@ namespace Silvarea.Network
 
                     String username = TextUtils.longToPlayerName((long)packet.g8());
                     String password = TextUtils.getRS2String(packet);
-                    Console.WriteLine("Username: " + username + ", Password: " + password); //this shit is garbled I think because of the lack of RSA encryption. Need to look at that, but otherwise it's working to here.
+                    Console.WriteLine("Username: " + username + ", Password: " + password); //this is garbled I think because of the lack of RSA encryption. Need to look at that, but otherwise it's working to here.
 
-                    //TODO move this to another method
-                    Packet loginReply = new Packet(new MemoryStream());
-                    loginReply.p1(5);//returncode, 2 is successful login. Remember that 18 for CurrentState possible above? If it is 18, send back 15 as successful returncode, this stops the chatbox from getting cleared :)
-                    loginReply.p1(0);
-                    loginReply.p1(1);
-                    loginReply.p2(0);//player index
-                    loginReply.p1(1);//1 = members, 0 = free
+                    Packet loginReply = LoginHandler.Login(session, username, password);
+                    session.Stream.WriteByte((byte) loginReply._opcode);
                     session.Stream.Write(loginReply.toByteArray());
 
+                } else
+                {
+                    session.Stream.Write(LoginHandler.GenerateReply(session, LoginHandler.LoginReturnCode.GAME_UPDATED).toByteArray());
                 }
             }
             else
