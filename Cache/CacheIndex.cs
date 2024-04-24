@@ -1,4 +1,5 @@
 ﻿using Silvarea.Network;
+using Silvarea.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +18,10 @@ namespace Silvarea.Cache
 
 		public CacheIndex(string path, int id, CacheIndex index255)
 		{
-			_dataFile = File.OpenRead("../../../data/cache/main_file_cache.dat2");
-			_indexFile = File.OpenRead("../../../data/cache/main_file_cache.idx" + id);
+			var currentDir = AppDomain.CurrentDomain.BaseDirectory + @"\" + ConfigurationManager.Config.GameServerConfiguration.CachePath + @"\";
+
+			_dataFile = File.OpenRead(currentDir + "main_file_cache.dat2");
+			_indexFile = File.OpenRead(currentDir + "main_file_cache.idx" + id);
 			if (index255 != null)
 			{
 				//some FileInformationTable stuff for old format

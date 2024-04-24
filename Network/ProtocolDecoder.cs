@@ -24,7 +24,7 @@ namespace Silvarea.Network
                 switch (session.CurrentState)
                 {
                     case RS2ConnectionState.UPDATE:
-                        if (version == 410) //TODO Don't hardcode this
+                        if (version == ConfigurationManager.Config.GameServerConfiguration.Version)
                             session.Stream.Write([0]);
                         else
                         {
@@ -100,8 +100,8 @@ namespace Silvarea.Network
             {
                 Console.WriteLine("past first check");
                 int version = packet.g4();
-                if (version == 410) //TODO Don't hardcode this
-                {
+                if (version == ConfigurationManager.Config.GameServerConfiguration.Version)
+				{
                     Console.WriteLine("second check - version correct");
                     Boolean isLowMemory = packet.g1() == 1;
                     for (int i = 0; i < 24; i++)

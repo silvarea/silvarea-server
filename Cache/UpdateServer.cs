@@ -17,7 +17,7 @@ namespace Silvarea.Cache
         {
             Console.WriteLine("Loading cache...");
             int total = 0;
-            foreach (string filePath in Directory.GetFiles(path))
+            foreach (string filePath in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + @"\" + path))
             {
                 if (filePath.Contains("main_file_cache.idx"))
                 {
