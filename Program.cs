@@ -1,7 +1,6 @@
 ﻿using Silvarea.Network;
 using Silvarea.Cache;
 using Silvarea.Utility;
-using Newtonsoft.Json;
 
 namespace Silvarea
 {
@@ -16,12 +15,6 @@ namespace Silvarea
 			UpdateServer.init(ConfigurationManager.Config.GameServerConfiguration.CachePath);
 			SocketManager socketManager = new SocketManager();
 			socketManager.Start();
-		}
-
-		public void loadConfig()
-		{
-
-
 		}
 	}
 }
