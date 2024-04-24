@@ -32,26 +32,29 @@ namespace Silvarea.Network
 		public void Listen() 
 		{
 			Socket clientSocket = _socket.Accept();
-			Console.WriteLine("New connection type: " + clientSocket.SocketType);
-			//var session = sessions.Find(s => clientSocket == s.Socket);
-			var session = sessions.Find(s => clientSocket.RemoteEndPoint.Equals(s.EndPoint));
-			if (session == null)
+			Console.WriteLine("New connection from IP: " + clientSocket.RemoteEndPoint.ToString().Split(":")[0] + ". Number of live connections: " + sessions.Count);
+			var session = sessions.Find(s => clientSocket.RemoteEndPoint.ToString().Split(":")[0].Equals(s.Socket.RemoteEndPoint.ToString().Split(":")[0])); //instead of checking the sessions list, check the player list for connected sockets 
+			if (session == null || session.CurrentState != RS2ConnectionState.GAME)
 			{
 				session = new Session(clientSocket);
 				sessions.Add(session);
 				session.Start();
 			} else
 			{
-				session.Socket = clientSocket;
+                session.Socket = clientSocket;
 				session.Start();
-				Console.WriteLine("Continued Connection!");//notice how this never happens? lol.
 			}
 		}
 
 		public static void Disconnect(Session s)
 		{
-            s.Socket.Disconnect(false);
-            sessions.Remove(s);
+			if (s.Socket.Connected)
+			{
+				s.Socket.Disconnect(false);
+				s.Socket.Dispose();
+			}
+            if (sessions.Contains(s))
+                sessions.Remove(s);
 		}
 
 		public void Close() 

@@ -2,9 +2,9 @@
 {
 	public enum RS2ConnectionState
 	{
-		INITIAL,
-		UPDATE,
-		LOGIN,
-		GAME
+		HANDSHAKE = 0,
+        LOGIN = 14,
+        UPDATE = 15,
+		GAME = 16
 	}
 }
