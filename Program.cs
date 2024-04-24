@@ -1,5 +1,6 @@
 ﻿using Silvarea.Network;
 using Silvarea.Cache;
+using Silvarea.Utility;
 
 namespace Silvarea
 {
@@ -8,7 +9,10 @@ namespace Silvarea
 
 		public static void Main()
 		{
-			UpdateServer.init("../../../data/cache");
+
+			ConfigurationManager.Initialize();
+
+			UpdateServer.init(ConfigurationManager.Config.GameServerConfiguration.CachePath);
 			SocketManager socketManager = new SocketManager();
 			socketManager.Start();
 		}
