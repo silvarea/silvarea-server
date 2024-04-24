@@ -17,7 +17,7 @@ namespace Silvarea.Network
         public static void Handshake(Session session, int size)
         {
             Packet packet = new Packet(session.inBuffer);
-            session.CurrentState = (RS2ConnectionState) packet.g1();
+            session.CurrentState = (RS2ConnectionState)packet.g1();
             int version = packet.g4();
             try
             {
@@ -45,7 +45,8 @@ namespace Silvarea.Network
                         SocketManager.Disconnect(session);
                         break;
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.StackTrace);
                 SocketManager.Disconnect(session);
@@ -55,7 +56,7 @@ namespace Silvarea.Network
         public static void Update(Session session, int size)
         {
             int read = 0;
-            //check if not divisible by 2 e.e somethin' funky goin' on
+            //check if not divisible by 2, all requests here should be an even number.
             Packet packet = new Packet(session.inBuffer);
             while ((size - read) > 3 && session.Socket.Connected)
             {
@@ -71,14 +72,15 @@ namespace Silvarea.Network
                         case 1: //urgent request
                             session.Stream.Write(UpdateServer.getRequest(indexNumber, fileNumber));
                             break;
-                        case 2: //clear request queue plz :3
-                        case 3: //I SAID CLEAR IT, MOTHERFUCKER
+                        case 2: //non-urgent clear request queue
+                        case 3: //urgent clear requests queue
                             Console.WriteLine("clear queue request received from client");
                             break;
                         case 4: //client error
                             break;
                     }
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.StackTrace);
                     SocketManager.Disconnect(session);
@@ -92,7 +94,7 @@ namespace Silvarea.Network
             if (size < 2)
                 return;
             Packet packet = new Packet(session.inBuffer);
-            session.CurrentState = (RS2ConnectionState) packet.g1(); //try/catch here? in case the result can't resolve from mismatch
+            session.CurrentState = (RS2ConnectionState)packet.g1(); //try/catch here? in case the result can't resolve from mismatch -- ahh, also 18 is RECONNECTING from a dropped connection, 16 is brand new login
             int reportedSize = packet.g1();
             if (session.CurrentState == RS2ConnectionState.GAME && reportedSize == (size - 2)) //basically just verifies this login attempt isn't an accident or a fumble
             {
@@ -102,12 +104,12 @@ namespace Silvarea.Network
                 {
                     Console.WriteLine("second check - version correct");
                     Boolean isLowMemory = packet.g1() == 1;
-                    for (int i = 0; i < 24; i++) 
+                    for (int i = 0; i < 24; i++)
                     {
                         packet.g1(); //not really sure what this is, needs investigation
                     }
 
-                    for (int i = 0;i < 13; i++)
+                    for (int i = 0; i < 13; i++)//this obviously changes with revision, but can stay in engine because we can derive it from Update Server
                     {
                         packet.g4(); //something to do with cache indices, I think it's CRC32 checksum return verification?? Will read back and see.
                     }
@@ -122,12 +124,22 @@ namespace Silvarea.Network
 
                     //some logic here, duh
 
-                    String username = TextUtils.longToPlayerName((long) packet.g8());
+                    String username = TextUtils.longToPlayerName((long)packet.g8());
                     String password = TextUtils.getRS2String(packet);
                     Console.WriteLine("Username: " + username + ", Password: " + password); //this shit is garbled I think because of the lack of RSA encryption. Need to look at that, but otherwise it's working to here.
 
+                    //TODO move this to another method
+                    Packet loginReply = new Packet(new MemoryStream());
+                    loginReply.p1(5);//returncode, 2 is successful login. Remember that 18 for CurrentState possible above? If it is 18, send back 15 as successful returncode, this stops the chatbox from getting cleared :)
+                    loginReply.p1(0);
+                    loginReply.p1(1);
+                    loginReply.p2(0);//player index
+                    loginReply.p1(1);//1 = members, 0 = free
+                    session.Stream.Write(loginReply.toByteArray());
+
                 }
-            } else
+            }
+            else
             {
                 Console.WriteLine("Disconnecting Socket for login packet error");
                 SocketManager.Disconnect(session);

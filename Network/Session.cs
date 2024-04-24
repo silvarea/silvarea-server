@@ -38,40 +38,40 @@ namespace Silvarea.Network
 	 * These notes are somewhat speculatory, see parentheticals.
 	 */
     public class Session
-	{
-		public Socket Socket {  get; set; }
+    {
+        public Socket Socket { get; set; }
 
-		public EndPoint EndPoint { get; set; }
+        public EndPoint EndPoint { get; set; }
 
-		public NetworkStream Stream { get; set; }
+        public NetworkStream Stream { get; set; }
 
-		public readonly byte[] inBuffer = new byte[5000];
+        public readonly byte[] inBuffer = new byte[5000];
 
-		public readonly byte[] outBuffer = new byte[5000];
+        public readonly byte[] outBuffer = new byte[5000];
 
-		public RS2ConnectionState CurrentState { get; set; }
+        public RS2ConnectionState CurrentState { get; set; }
 
-		// TODO: Add a reference to a player class whenever that exists.
-		public Session(Socket socket)
-		{
-			CurrentState = RS2ConnectionState.HANDSHAKE;
-			Socket = socket;
-			EndPoint = Socket.RemoteEndPoint;
-			Stream = new NetworkStream(socket, ownsSocket: true);
-		}
+        // TODO: Add a reference to a player class whenever that exists.
+        public Session(Socket socket)
+        {
+            CurrentState = RS2ConnectionState.HANDSHAKE;
+            Socket = socket;
+            EndPoint = Socket.RemoteEndPoint;
+            Stream = new NetworkStream(socket, ownsSocket: true);
+        }
 
-		public void Start()
-		{
-			Listen();
-		}
+        public void Start()
+        {
+            Listen();
+        }
 
         private void Listen()
         {
 
             try
             {
-				if (!Socket.Connected)
-					return;
+                if (!Socket.Connected)
+                    return;
                 // Todo: Get that IP and port from a config file.
                 EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);//TODO Don't hardcode. I think this will cause only local clients to be able to connect? Should refuse to read bytes if from outside connection. We'll see when we try to connect from another PC.
                 Socket.BeginReceiveFrom(inBuffer, 0, inBuffer.Length, SocketFlags.None, ref clientEndPoint, OnDataReceive, Socket);
@@ -79,62 +79,63 @@ namespace Silvarea.Network
             catch (SocketException ex)
             {
                 Console.WriteLine(ex.ToString());
-				SocketManager.Disconnect(this);
+                SocketManager.Disconnect(this);
             }
 
         }
 
         private void OnDataReceive(IAsyncResult result)
-		{
-			//EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
-			EndPoint clientEndPoint = Socket.RemoteEndPoint;
+        {
+            //EndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 43594);
+            EndPoint clientEndPoint = Socket.RemoteEndPoint;
 
-			if (clientEndPoint == null)
-				return;
+            if (clientEndPoint == null)
+                return;
 
-			int received = 0;
-			try
-			{
+            int received = 0;
+            try
+            {
 
-				received = Socket.EndReceiveFrom(result, ref clientEndPoint);//TODO System.Net.Sockets.SocketException - Message = An existing connection was forcibly closed by the remote host. - Source = System.Net.Sockets; after closing client- need to handle dropped connections
-			} catch (Exception ex)
-			{
-				Console.WriteLine("Some error: " + ex.Message);
+                received = Socket.EndReceiveFrom(result, ref clientEndPoint);//TODO System.Net.Sockets.SocketException - Message = An existing connection was forcibly closed by the remote host. - Source = System.Net.Sockets; after closing client- need to handle dropped connections
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Some error: " + ex.Message);
                 SocketManager.Disconnect(this);
-				return;
-			}
-			if (received == 0)
-			{
-				return;
-			}
+                return;
+            }
+            if (received == 0)
+            {
+                return;
+            }
 
             switch (CurrentState)
-			{
-				case RS2ConnectionState.HANDSHAKE:
-					ProtocolDecoder.Handshake(this, received);
-					break;
-				case RS2ConnectionState.UPDATE:
-					ProtocolDecoder.Update(this, received);
-					break;
-				case RS2ConnectionState.LOGIN:
-					ProtocolDecoder.Login(this, received);
-					break;
-				case RS2ConnectionState.GAME:
-					ProtocolDecoder.Decode(this, received);
-					break;
-				default:
-					SocketManager.Disconnect(this);
-					break;
-			}
-			if (result.CompletedSynchronously)
-			{
-				Task.Run(Listen);
-			}
-			else
-			{
-				Listen();
-			}
-			//return;
-		}
-	}
+            {
+                case RS2ConnectionState.HANDSHAKE:
+                    ProtocolDecoder.Handshake(this, received);
+                    break;
+                case RS2ConnectionState.UPDATE:
+                    ProtocolDecoder.Update(this, received);
+                    break;
+                case RS2ConnectionState.LOGIN:
+                    ProtocolDecoder.Login(this, received);
+                    break;
+                case RS2ConnectionState.GAME:
+                    ProtocolDecoder.Decode(this, received);
+                    break;
+                default:
+                    SocketManager.Disconnect(this);
+                    break;
+            }
+            if (result.CompletedSynchronously)
+            {
+                Task.Run(Listen);
+            }
+            else
+            {
+                Listen();
+            }
+            //return;
+        }
+    }
 }
