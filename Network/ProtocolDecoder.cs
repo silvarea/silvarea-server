@@ -39,7 +39,7 @@ namespace Silvarea.Network
                         Packet loginReply = new Packet(-1, new byte[9]);
                         loginReply.p1(0);
                         loginReply.p8(session.serverKey);
-                        Console.WriteLine("Server key is: " +  session.serverKey);
+                        Console.WriteLine("Server key is: " + session.serverKey);
                         session.Stream.Write(loginReply.toByteArray());
                         break;
                     default:
@@ -97,17 +97,16 @@ namespace Silvarea.Network
             Packet packet = new Packet(session.inBuffer);
             session.CurrentState = (RS2ConnectionState)packet.g1(); //try/catch here? in case the result can't resolve from mismatch -- ahh, also 18 is RECONNECTING from a dropped connection, 16 is brand new login
             int reportedSize = packet.g1();
-            if (session.CurrentState == RS2ConnectionState.GAME && reportedSize == (size - 2)) //basically just verifies this login attempt isn't an accident or a fumble, think we need support for 18 here as well?
+            if ((session.CurrentState == RS2ConnectionState.GAME || session.CurrentState == RS2ConnectionState.RECONNECT) && reportedSize == (size - 2)) //basically just verifies this login attempt isn't an accident or a fumble, think we need support for 18 here as well?
             {
-                Console.WriteLine("past first check");
                 int version = packet.g4();
                 if (version == ConfigurationManager.Config.GameServerConfiguration.Version)
-				{
-                    Console.WriteLine("second check - version correct");
+                {
                     Boolean isLowMemory = packet.g1() == 1;
-                    for (int i = 0; i < UpdateServer._hashes.Length; i++)
+                    for (int i = 0; i < UpdateServer.hashes.Length; i++)
                     {
-                        if (packet.g4() != UpdateServer._hashes[i]) {
+                        if (packet.g4() != UpdateServer.hashes[i])
+                        {
                             session.Stream.Write(LoginHandler.GenerateReply(session, LoginHandler.LoginReturnCode.GAME_UPDATED).toByteArray());
                             SocketManager.Disconnect(session);
                         }
@@ -137,16 +136,7 @@ namespace Silvarea.Network
                         SocketManager.Disconnect(session);
                     }
 
-                    int uid = decryptedPacket.g4();
-
-                    String username = TextUtils.longToPlayerName((long)decryptedPacket.g8());
-                    String password = TextUtils.getRS2String(decryptedPacket);
-                    Console.WriteLine("Username: " + username + ", Password: " + password); //this is garbled I think because of the lack of RSA encryption. Need to look at that, but otherwise it's working to here.
-
-                    Packet loginReply = LoginHandler.Login(session, username, password);
-                    session.Stream.Write(loginReply.toByteArray());
-
-                    int[] cipherKey = {clientKey1, clientKey2, (int)(incomingServerKey >> 32), (int)incomingServerKey};
+                    int[] cipherKey = { clientKey1, clientKey2, (int)(incomingServerKey >> 32), (int)incomingServerKey };
 
                     session.inCipher = new Isaac(cipherKey);
 
@@ -155,7 +145,16 @@ namespace Silvarea.Network
 
                     session.outCipher = new Isaac(cipherKey);
 
-                    //in encoder, remember to opcode += session.outCipher.val();
+                    int uid = decryptedPacket.g4();
+
+                    string username = TextUtils.longToPlayerName((long)decryptedPacket.g8());
+                    string password = TextUtils.getRS2String(decryptedPacket);
+                    Console.WriteLine("Username: " + username + ", Password: " + password);
+
+                    Packet loginReply = LoginHandler.Login(session, username, password, isLowMemory);
+                    session.Stream.Write(loginReply.toByteArray());
+
+                    //in encoder, remember to opcode += session.outCipher.val(); and inverse in decoder
 
                 }
                 else

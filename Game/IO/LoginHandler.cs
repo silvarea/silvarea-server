@@ -10,7 +10,7 @@ namespace Silvarea.Game.IO
     internal class LoginHandler //Yeah I know it needs a different name, not sure what to call it
     {
 
-        public static Packet Login(Session session, string username, string password)
+        public static Packet Login(Session session, string username, string password, Boolean isLowMemory)
         {
             //lotta messy logic to go here!!!
             //Remember that 18 for CurrentState possible in login decoder? If it is 18, send back 15 as successful returncode, this stops the chatbox from getting cleared :)
