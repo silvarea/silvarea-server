@@ -136,7 +136,26 @@ namespace Silvarea.Network
 			_streamWriter.Write((sbyte) value);
 		}
 
-		public int g1()
+		public void p1_alt3(int value)
+		{
+			_streamWriter.Write((sbyte) value + 128);
+		}
+
+		public void p2_alt1(int value)
+		{
+            _streamWriter.Write((sbyte)value);
+            _streamWriter.Write((sbyte)(value >> 8));
+        }
+
+        public void p4_alt1(int value)
+        {
+            _streamWriter.Write((sbyte) value);
+            _streamWriter.Write((sbyte) (value >> 8));
+            _streamWriter.Write((sbyte) (value >> 16));
+            _streamWriter.Write((sbyte) (value >> 24));
+        }
+
+        public int g1()
 		{
 			return _streamReader.ReadByte();
 		}
