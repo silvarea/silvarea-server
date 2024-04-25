@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Text;
+﻿using System.Text;
 
 namespace Silvarea.Network
 {
@@ -183,5 +182,5 @@ namespace Silvarea.Network
 			_stream.Read(data, 0, data.Length);
 			return data;
 		}
-	}
+    }
 }

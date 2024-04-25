@@ -7,34 +7,42 @@ using System.Threading.Tasks;
 
 namespace Silvarea.Game.IO
 {
-    internal class LoginHandler
+    internal class LoginHandler //Yeah I know it needs a different name, not sure what to call it
     {
 
         public static Packet Login(Session session, string username, string password)
         {
             //lotta messy logic to go here!!!
+            //Remember that 18 for CurrentState possible in login decoder? If it is 18, send back 15 as successful returncode, this stops the chatbox from getting cleared :)
             LoginReturnCode returnCode = LoginReturnCode.SUCCESS;
             return GenerateReply(session, returnCode);//loginReply;//login reply packet
         }
 
         public static Packet GenerateReply(Session session, LoginReturnCode returnCode)
         {
-            /*Packet loginReply = new Packet(new MemoryStream());
-            loginReply.p1(2);//returncode, 2 is successful login. Remember that 18 for CurrentState possible above? If it is 18, send back 15 as successful returncode, this stops the chatbox from getting cleared :)
-            loginReply.p1(0);
-            loginReply.p1(1);
-            loginReply.p2(0);//player index
-            loginReply.p1(1);//1 = members, 0 = free
-            */
-            return null;
+            Packet loginReply = new Packet(new MemoryStream());
+            loginReply.p1((int) returnCode);
+            switch (returnCode)
+            {
+                case LoginReturnCode.SUCCESS:
+                    loginReply.p1(0);//player rights; 0 = player, 1 = pmod, 2 = jmod
+                    loginReply.p1(0);//bot flag, makes the client send mouse tracking packets back to server if set to 1; incoming packet opcode = 94
+                    loginReply.p2(0);//player index
+                    loginReply.p1(1);//1 = members, 0 = free
+                    break;
+                case LoginReturnCode.TRANSFER_DELAY:
+                    loginReply.p1(30);//number of seconds before logging in
+                    break;
+            }
+            return loginReply;
         }
 
         public enum LoginReturnCode //Up to date for #410
         {
-            CONNECTION_TIMED_OUT = -3,
-            ERROR_CONNECTING = -2,
+            CONNECTION_TIMED_OUT = -3,//We don't send this typically, it's an internal code for the client.
+            ERROR_CONNECTING = -2,//We don't send this typically, it's an internal code for the client.
             RETRY_WITH_COUNT = -1,//wait 2000ms and tries again with attempt count displayed
-            RESEND_INFO = 0;//requests login handshake again? Exchanges session keys, player name, password
+            RESEND_INFO = 0,//requests login handshake again? Exchanges session keys, player name, password
             RETRY = 1,//wait 2000ms and tries again
             SUCCESS = 2,//Successful normal login - <byte>returncode, <byte>unknown, <byte> unknown, <short> playerIndex, <byte>membersFlag
             INVALID_CREDENTIALS = 3,

@@ -56,7 +56,7 @@ namespace Silvarea.Utility
         {
             StringBuilder s = new StringBuilder();
             int c;
-            while ((c = packet.g1()) != 0) {
+            while (packet.Position != packet.Length && (c = packet.g1()) != 0) {
                 s.Append((char)c);
             }
             return s.ToString();

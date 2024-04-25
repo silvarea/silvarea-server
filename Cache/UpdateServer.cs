@@ -13,6 +13,8 @@ namespace Silvarea.Cache
 
         private static byte[] _crc = new byte[0];
 
+        public static int[] _hashes {  get; private set; }
+
         public static void init(string path)
         {
             Console.WriteLine("Loading cache...");
@@ -36,9 +38,12 @@ namespace Silvarea.Cache
             }
 
             byte[] data = new byte[4048];
-            Packet packet = new Packet((byte) 0, data);
+            Packet packet = new Packet(data);
 
             int length = Cache.getIndex(255).getLength() / 6;
+
+            _hashes = new int[length];
+
             packet.p1(0);
             packet.p4(length * 4); //multiply by 8 for 460+
             new CRC32();
@@ -46,6 +51,7 @@ namespace Silvarea.Cache
             {
                 int hash = (int)CRC32.CalculateCrc32(Cache.getIndex(255).getFile(file));
                 packet.p4(hash);
+                _hashes[file] = hash;
                 Packet crcDecompressed = new Packet(new FileDecompressor(Cache.getIndex(255).getFile(file)).decompress());
                 int version = crcDecompressed.g1();
                 int revision = version >= 6 ? crcDecompressed.g4() : 0;

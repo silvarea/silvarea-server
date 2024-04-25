@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using System.Text;
+﻿using Org.BouncyCastle.Math;
 using Silvarea.Cache;
 using Silvarea.Game.IO;
 using Silvarea.Utility;
@@ -19,12 +18,12 @@ namespace Silvarea.Network
         {
             Packet packet = new Packet(session.inBuffer);
             session.CurrentState = (RS2ConnectionState)packet.g1();
-            int version = packet.g4();
             try
             {
                 switch (session.CurrentState)
                 {
                     case RS2ConnectionState.UPDATE:
+                        int version = packet.g4();
                         if (version == ConfigurationManager.Config.GameServerConfiguration.Version)
                             session.Stream.Write([0]);
                         else
@@ -34,11 +33,13 @@ namespace Silvarea.Network
                         }
                         break;
                     case RS2ConnectionState.LOGIN:
+                        Console.WriteLine("Login... what is this? " + packet.g1());
                         Random rand = new Random();
-                        long key = ((long)(rand.Next(1) * 99999999D) << 32) + ((long)(rand.Next(1) * 99999999D));
+                        session.serverKey = ((long)(rand.NextDouble() * 99999999D) << 32) + ((long)(rand.NextDouble() * 99999999D));//might not need to save this, actually. Not here, anyway. Further down.
                         Packet loginReply = new Packet(-1, new byte[9]);
                         loginReply.p1(0);
-                        loginReply.p8(key);
+                        loginReply.p8(session.serverKey);
+                        Console.WriteLine("Server key is: " +  session.serverKey);
                         session.Stream.Write(loginReply.toByteArray());
                         break;
                     default:
@@ -91,13 +92,12 @@ namespace Silvarea.Network
 
         public static void Login(Session session, int size)
         {
-            Console.WriteLine("We doin' the login thing: " + size);
             if (size < 2)
                 return;
             Packet packet = new Packet(session.inBuffer);
             session.CurrentState = (RS2ConnectionState)packet.g1(); //try/catch here? in case the result can't resolve from mismatch -- ahh, also 18 is RECONNECTING from a dropped connection, 16 is brand new login
             int reportedSize = packet.g1();
-            if (session.CurrentState == RS2ConnectionState.GAME && reportedSize == (size - 2)) //basically just verifies this login attempt isn't an accident or a fumble
+            if (session.CurrentState == RS2ConnectionState.GAME && reportedSize == (size - 2)) //basically just verifies this login attempt isn't an accident or a fumble, think we need support for 18 here as well?
             {
                 Console.WriteLine("past first check");
                 int version = packet.g4();
@@ -105,40 +105,60 @@ namespace Silvarea.Network
 				{
                     Console.WriteLine("second check - version correct");
                     Boolean isLowMemory = packet.g1() == 1;
-
-                    for (int i = 0; i < 13; i++)//this obviously changes with revision, but can stay in engine because we can derive it from Update Server
+                    for (int i = 0; i < UpdateServer._hashes.Length; i++)
                     {
-                        packet.g4(); //something to do with cache indices, I think it's CRC32 checksum return verification?? Will read back and see.
+                        if (packet.g4() != UpdateServer._hashes[i]) {
+                            session.Stream.Write(LoginHandler.GenerateReply(session, LoginHandler.LoginReturnCode.GAME_UPDATED).toByteArray());
+                            SocketManager.Disconnect(session);
+                        }
                     }
 
-                    /** Okay here's what's going on here
-                     * first 4 ints are Isaac seed from client (woohoo!)
-                     * 
-                     */
-                    for (int i = 0; i < 24; i++)
+                    int encryptedSize = packet.g1();
+
+                    byte[] encryptedData = new byte[encryptedSize];
+                    packet.Read(encryptedData, 0, encryptedSize);
+                    Packet decryptedPacket = new Packet(new BigInteger(encryptedData).ModPow(new BigInteger(ConfigurationManager.Config.GameServerConfiguration.exponent), new BigInteger(ConfigurationManager.Config.GameServerConfiguration.modulus)).ToByteArray());
+
+
+                    int blockOpcode = decryptedPacket.g1();
+                    if (blockOpcode != 10)
                     {
-                        packet.g1(); //not really sure what this is, needs investigation
+                        session.Stream.Write(LoginHandler.GenerateReply(null, LoginHandler.LoginReturnCode.UNABLE_TO_COMPLETE).toByteArray());
+                        SocketManager.Disconnect(session);
                     }
 
-                    int something = packet.g1(); //dunno man, but we're about to check it
-                    if (something != 10)
-                        packet.g1(); //ahuh, who knows dude
+                    int clientKey1 = decryptedPacket.g4();
+                    int clientKey2 = decryptedPacket.g4();
+                    long incomingServerKey = decryptedPacket.g8();
 
-                    long clientKey = packet.g8(); //client's session key?
+                    if (session.serverKey != incomingServerKey)
+                    {
+                        session.Stream.Write(LoginHandler.GenerateReply(null, LoginHandler.LoginReturnCode.BAD_SESSION_ID).toByteArray());
+                        SocketManager.Disconnect(session);
+                    }
 
-                    long reportedServerKey = packet.g8(); //I believe this is that key we gave it earlier that we generated
+                    int uid = decryptedPacket.g4();
 
-                    //some logic here, duh
-
-                    String username = TextUtils.longToPlayerName((long)packet.g8());
-                    String password = TextUtils.getRS2String(packet);
+                    String username = TextUtils.longToPlayerName((long)decryptedPacket.g8());
+                    String password = TextUtils.getRS2String(decryptedPacket);
                     Console.WriteLine("Username: " + username + ", Password: " + password); //this is garbled I think because of the lack of RSA encryption. Need to look at that, but otherwise it's working to here.
 
                     Packet loginReply = LoginHandler.Login(session, username, password);
-                    session.Stream.WriteByte((byte) loginReply._opcode);
                     session.Stream.Write(loginReply.toByteArray());
 
-                } else
+                    int[] cipherKey = {clientKey1, clientKey2, (int)(incomingServerKey >> 32), (int)incomingServerKey};
+
+                    session.inCipher = new Isaac(cipherKey);
+
+                    for (int i = 0; i < cipherKey.Length; i++)
+                        cipherKey[i] += 50;
+
+                    session.outCipher = new Isaac(cipherKey);
+
+                    //in encoder, remember to opcode += session.outCipher.val();
+
+                }
+                else
                 {
                     session.Stream.Write(LoginHandler.GenerateReply(session, LoginHandler.LoginReturnCode.GAME_UPDATED).toByteArray());
                 }
