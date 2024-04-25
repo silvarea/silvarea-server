@@ -1,6 +1,6 @@
 {
   "gameServerConfiguration": {
     "version": 410,
-    "cachePath": "Cache"
+    "cachePath": "Cache",
   }
 }
