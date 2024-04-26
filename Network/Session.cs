@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Threading;
+using Silvarea.Utility;
 
 namespace Silvarea.Network
 {
@@ -39,6 +40,9 @@ namespace Silvarea.Network
 	 */
     public class Session
     {
+        public Isaac outCipher { get; set; }
+        public Isaac inCipher { get; set; }
+        public long serverKey { get; set; }
         public Socket Socket { get; set; }
 
         public EndPoint EndPoint { get; set; }

@@ -13,6 +13,8 @@ namespace Silvarea.Cache
 
         private static byte[] _crc = new byte[0];
 
+        public static int[] hashes { get; private set; }
+
         public static void init(string path)
         {
             Console.WriteLine("Loading cache...");
@@ -36,23 +38,26 @@ namespace Silvarea.Cache
             }
 
             byte[] data = new byte[4048];
-            Packet packet = new Packet((byte) 0, data);
+            Packet packet = new Packet(data);
 
             int length = Cache.getIndex(255).getLength() / 6;
+
+            hashes = new int[length];
+
             packet.p1(0);
             packet.p4(length * 4); //multiply by 8 for 460+
             new CRC32();
-            for (int file = 0; file < length; file++) 
+            for (int file = 0; file < length; file++)
             {
                 int hash = (int)CRC32.CalculateCrc32(Cache.getIndex(255).getFile(file));
                 packet.p4(hash);
+                hashes[file] = hash;
                 Packet crcDecompressed = new Packet(new FileDecompressor(Cache.getIndex(255).getFile(file)).decompress());
                 int version = crcDecompressed.g1();
                 int revision = version >= 6 ? crcDecompressed.g4() : 0;
                 //packet.p4(revision);//Only send in 460+
             }
             _crc = packet.toByteArray();
-            //Array.Resize(ref _crc, 4048);
         }
 
         public static byte[] getRequest(int index, int file)
@@ -60,14 +65,14 @@ namespace Silvarea.Cache
             var cache = getCacheFile(index, file);
             byte[] data = new byte[(cache.Length - 2) + ((cache.Length - 2) / 511) + 8];
             Packet packet = new Packet(0, data);
-            packet.p1((byte) index);
-            packet.p2((short) file);
-            int len = 
+            packet.p1((byte)index);
+            packet.p2((short)file);
+            int len =
                      (((cache[1] & 0xff) << 24) +
                      ((cache[2] & 0xff) << 16) +
                      ((cache[3] & 0xff) << 8) +
                      (cache[4] & 0xff)) + 9;
-            
+
             if (cache[0] == 0)
             {
                 len -= 4;
@@ -91,7 +96,7 @@ namespace Silvarea.Cache
 
             if (index == 255 && file == 255)
             {
-            	return _crc;
+                return _crc;
             }
 
             return Cache.getCacheFile(index, file);
