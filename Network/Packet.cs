@@ -128,7 +128,6 @@ namespace Silvarea.Network
 		{
             _streamWriter.Write((sbyte) (value >> 8));
             _streamWriter.Write((sbyte) value);
-			
         }
 
 		public void p1(int value)
@@ -138,7 +137,7 @@ namespace Silvarea.Network
 
 		public void p1_alt3(int value)
 		{
-			_streamWriter.Write((sbyte) value + 128);
+			_streamWriter.Write((byte) (value + 128));//sbyte
 		}
 
 		public void p2_alt1(int value)
