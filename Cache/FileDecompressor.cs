@@ -20,7 +20,6 @@ namespace Silvarea.Cache
             MemoryStream buffer = new MemoryStream(data);
             BinaryReader reader = new BinaryReader(buffer);
             int compression = reader.ReadByte();// packet.g1();
-            //TODO Aw fuckin' christ. The client does networking in Big Endian and BinaryReader reads in Little Endian... Either find a better Reader or it's time to make a Packet/Stream Class!
             byte[] uncompressedData = reader.ReadBytes(4);
             Array.Reverse(uncompressedData);
             int uncompressedSize = BitConverter.ToInt32(uncompressedData);//packet.g4();
@@ -43,11 +42,9 @@ namespace Silvarea.Cache
             switch (_file._Compression)
             {
                 case CacheFile.Compression.NONE:
-                    Console.WriteLine("Compression type: NONE");
                     Array.Copy(_file.toByteArray(), 5, newData, 0, _file.CacheSize);
                     break;
-                case CacheFile.Compression.BZIP: //Jagex uses a headerless BZip2 compression, so every BZip2 package I tried gave Invalid Header errors. Forced to implement custom decompression. :( I guess at least it keeps 3rd party packages out of engine so far.
-                    Console.WriteLine("Compression type: BZIP");
+                case CacheFile.Compression.BZIP:
                     byte[] bzipHeader = new byte[] {(byte)'B', (byte)'Z', (byte)'h', (byte)'1'};
                     byte[] data = _file.toByteArray().Skip(5).ToArray();
                     MemoryStream stream = new MemoryStream(data);
@@ -58,7 +55,6 @@ namespace Silvarea.Cache
                     bz2decompress.Close();
 					break;
                 case CacheFile.Compression.GZIP:
-                    Console.WriteLine("Compression type: GZIP");
                     byte[] gzipData = _file.toByteArray().Skip(9).ToArray();
                     MemoryStream gzipStream = new MemoryStream(gzipData);
                     try

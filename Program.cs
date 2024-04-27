@@ -13,8 +13,11 @@ namespace Silvarea
 			ConfigurationManager.Initialize();
 
 			UpdateServer.init(ConfigurationManager.Config.GameServerConfiguration.CachePath);
+
 			SocketManager socketManager = new SocketManager();
+
 			socketManager.Start();
+
 		}
 	}
 }

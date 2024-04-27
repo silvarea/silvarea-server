@@ -58,6 +58,7 @@ namespace Silvarea.Cache
                 //packet.p4(revision);//Only send in 460+
             }
             _crc = packet.toByteArray();
+            Console.WriteLine("Cache loaded.");
         }
 
         public static byte[] getRequest(int index, int file)

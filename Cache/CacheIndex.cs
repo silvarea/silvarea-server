@@ -24,7 +24,7 @@ namespace Silvarea.Cache
 			_indexFile = File.OpenRead(currentDir + "main_file_cache.idx" + id);
 			if (index255 != null)
 			{
-				//some FileInformationTable stuff for old format
+				//TODO some FileInformationTable stuff
 			}
 		}
 

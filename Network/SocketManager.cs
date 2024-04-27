@@ -14,6 +14,7 @@ namespace Silvarea.Network
 
         public SocketManager()
         {
+            Console.WriteLine("Opening socket...");
             _address = new IPAddress([127, 0, 0, 1]);
             _endpoint = new IPEndPoint(_address, 43594);
             _socket = new Socket(_address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -23,6 +24,8 @@ namespace Silvarea.Network
         {
             _socket.Bind(_endpoint);
             _socket.Listen(2000);
+
+            Console.WriteLine("Silvarea is online!");
 
             while (true)
             {
