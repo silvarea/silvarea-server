@@ -11,7 +11,27 @@ namespace Silvarea.Network.Codec
 
         public static void Encode(Session session, Packet packet)
         {
-            //in encoder, remember to opcode += session.outCipher.val(); and inverse in decoder
+            Packet encodedPacket = new Packet();
+            if (packet._opcode == -1)
+            {
+                session.Stream.Write(packet.toByteArray());
+                return;
+            }
+
+            encodedPacket.p1((byte) (packet._opcode += session.outCipher.val()));
+
+            int size = (int) packet.Length;//load in packet size array from client thru config loader (io.json) and check sizes here.
+
+            if (size == -1) //VAR_BYTE
+            {
+                encodedPacket.p1((byte) packet.Length);
+            } 
+            else if (size == -2) //VAR_SHORT
+            {
+                encodedPacket.p2((short) packet.Length);
+            }
+            encodedPacket.pdata(packet.toByteArray(), (int) packet.Length);
+            session.Stream.Write(encodedPacket.toByteArray());
         }
 
         public static void Decode(Session session, int size)

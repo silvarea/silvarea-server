@@ -12,6 +12,12 @@ namespace Silvarea.Network
 
 		public int _opcode { get; set; }
 
+		public Packet()
+		{
+			_opcode = -1;
+			initPacket(new MemoryStream());
+		}
+
 		public Packet(int opcode, byte[] data)
 		{
 			_opcode = opcode;
