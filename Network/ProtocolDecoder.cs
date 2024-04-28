@@ -116,7 +116,7 @@ namespace Silvarea.Network
 
                     byte[] encryptedData = new byte[encryptedSize];
                     packet.Read(encryptedData, 0, encryptedSize);
-                    Packet decryptedPacket = new Packet(new BigInteger(encryptedData).ModPow(new BigInteger(ConfigurationManager.Config.GameServerConfiguration.exponent), new BigInteger(ConfigurationManager.Config.GameServerConfiguration.modulus)).ToByteArray());
+                    Packet decryptedPacket = new Packet(new BigInteger(encryptedData).ModPow(new BigInteger(ConfigurationManager.Config.GameServerConfiguration.Exponent), new BigInteger(ConfigurationManager.Config.GameServerConfiguration.Modulus)).ToByteArray());
 
 
                     int blockOpcode = decryptedPacket.g1();
