@@ -9,6 +9,11 @@ namespace Silvarea.Game
 {
     public class World
     {
-        List<Player> players {  get; set; }
+        public static List<Player> Players {  get; set; } = new List<Player>(2000);
+        
+        public World()
+        {
+            //initialize 600ms game tick
+        }
     }
 }

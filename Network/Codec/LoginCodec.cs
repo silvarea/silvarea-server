@@ -1,5 +1,6 @@
 ﻿using Org.BouncyCastle.Math;
 using Silvarea.Cache;
+using Silvarea.Game;
 using Silvarea.Network;
 using Silvarea.Utility;
 using System;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Silvarea.Game.Entities;
 
 namespace Silvarea.Network.Codec
 {
@@ -30,7 +32,7 @@ namespace Silvarea.Network.Codec
                     {
                         if (packet.g4() != UpdateServer.hashes[i])
                         {
-                            session.Stream.Write(LoginCodec.GenerateReply(session, LoginCodec.LoginReturnCode.GAME_UPDATED).toByteArray());
+                            session.Stream.Write(LoginCodec.GenerateReply(null, LoginCodec.LoginReturnCode.GAME_UPDATED).toByteArray());
                             SocketManager.Disconnect(session);
                         }
                     }
@@ -77,10 +79,12 @@ namespace Silvarea.Network.Codec
                     Packet loginReply = LoginCodec.Login(session, username, password, isLowMemory);
                     session.Stream.Write(loginReply.toByteArray());
 
+                    //TODO Don't hardcode this
+                    session.Stream.Write(TestMap(session).toByteArray());
                 }
                 else
                 {
-                    session.Stream.Write(LoginCodec.GenerateReply(session, LoginCodec.LoginReturnCode.GAME_UPDATED).toByteArray());
+                    session.Stream.Write(LoginCodec.GenerateReply(null, LoginCodec.LoginReturnCode.GAME_UPDATED).toByteArray());
                 }
             }
             else
@@ -93,29 +97,97 @@ namespace Silvarea.Network.Codec
 
         public static Packet Login(Session session, string username, string password, bool isLowMemory)
         {
+            Player player = null;
             //lotta messy logic to go here!!!
             //Remember that 18 for CurrentState possible in login decoder? If it is 18, send back 15 as successful returncode, this stops the chatbox from getting cleared :)
+
+            //TODO Don't hardcode this
+            player = new Player(username, password, session, 2, isLowMemory, true);
+            World.Players.Add(player);
+
             LoginReturnCode returnCode = LoginReturnCode.SUCCESS;
-            return GenerateReply(session, returnCode);
+            return GenerateReply(player, returnCode);
         }
 
-        public static Packet GenerateReply(Session session, LoginReturnCode returnCode)
+        public static Packet GenerateReply(Player player, LoginReturnCode returnCode)
         {
             Packet loginReply = new Packet(new MemoryStream());
             loginReply.p1((int)returnCode);
             switch (returnCode)
             {
                 case LoginReturnCode.SUCCESS:
-                    loginReply.p1(0);//player rights; 0 = player, 1 = pmod, 2 = jmod
-                    loginReply.p1(0);//bot flag, makes the client send mouse tracking packets back to server if set to 1; incoming packet opcode = 94
-                    loginReply.p2(0);//player index
-                    loginReply.p1(1);//1 = members, 0 = free
+                    loginReply.p1(player._rights);//player rights; 0 = player, 1 = pmod, 2 = jmod
+                    loginReply.p1(0);//bot flag, makes the client send mouse tracking packets back to server if set to 1; incoming packet opcode = 94 for 410
+                    loginReply.p2(World.Players.IndexOf(player));//player index
+                    loginReply.p1(player._members ? 1 : 0);//1 = members, 0 = free
                     break;
                 case LoginReturnCode.TRANSFER_DELAY:
                     loginReply.p1(30);//number of seconds before logging in
                     break;
             }
             return loginReply;
+        }
+
+        public static Packet TestMap(Session session) //TODO Delete this when you're done playing around
+        {
+            int playerX = 3370;
+            int playerY = 3485;
+
+            int regionX = (playerX >> 3);
+            int regionY = (playerY >> 3);
+
+            int localX = playerX - 8 * (regionX - 6);
+            int localY = playerY - 8 * (regionY - 6);
+
+            Packet locPacket = new Packet(new MemoryStream());
+            int opcode = 122 + session.outCipher.val();
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            locPacket.p2_alt1(localX);
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            for (int xCalc = (regionX - 6) / 8; xCalc <= ((regionX + 6) / 8); xCalc++)
+            {
+                for (int yCalc = (regionY - 6) / 8; yCalc <= ((regionY + 6) / 8); yCalc++)
+                {
+                    int region = yCalc + (xCalc << 8);
+                    if ((yCalc != 49) && (yCalc != 149) && (yCalc != 147) && (xCalc != 50) && ((xCalc != 49) || (yCalc != 47)))
+                    {
+                        Console.WriteLine("Sending keys! another 16 bytes!");
+                        for (int i = 0; i < 4; i++)
+                        {
+                            locPacket.p4(0);//do some xtea key loading
+                        }
+                    }
+                }
+            }
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            locPacket.p2_alt1(regionY);
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            locPacket.p2_alt1(localY);
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            locPacket.p1_alt3(3);//z coord
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            locPacket.p2(regionX);
+            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
+            Console.WriteLine("regionY = " + regionY + ", regionX = " + regionX + ", localY = " + localY + ", localX = " + localX);
+            byte[] locData = locPacket.toByteArray();
+            locPacket.Dispose();
+
+            Packet packet = new Packet(new MemoryStream());
+            packet.p1(opcode);
+            Console.WriteLine("Sending packet size = " + (locData.Length));//+1 for only opcode? or +3 for opcode+size info...?
+            packet.p2((int)locData.Length);//packet size, we're getting into encoding territory. This is VAR_SHORT because it sends the packet size to the client as a short value, since it might be higher than a byte, depending on variables.
+            packet.pdata(locData, locData.Length);
+            //packet.p2(regionX);
+
+
+            //g2_alt1 - local x or y
+            //XTEA keys
+            //g2_alt1 - region y
+            //g2_alt1 - local x or y
+            //g1_alt3 - z coord
+            //g2 - region x
+
+            return packet;
         }
 
         public enum LoginReturnCode //Up to date for #410
