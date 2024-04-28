@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Silvarea.Game.Player
+namespace Silvarea.Game.Entities
 {
-    internal class Player
+    internal class PlayerSync
     {
     }
 }

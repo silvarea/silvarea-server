@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Silvarea.Game.Entities;
 
-namespace Silvarea.Game.Player
+namespace Silvarea.Game
 {
-    internal class PlayerSync
+    public class World
     {
+        List<Player> players {  get; set; }
     }
 }
