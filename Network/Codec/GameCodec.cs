@@ -36,7 +36,21 @@ namespace Silvarea.Network.Codec
 
         public static void Decode(Session session, int size)
         {
-            //where the real packets get decoded :o not this pre-login nonsense
+            Packet packet = new Packet(session.inBuffer);
+            int opcode = packet.g1();
+            opcode += session.inCipher.val();
+
+            int expectedSize = size - 1;//load in packet size array thru config load (io.json). Unfortunately, I don't think this one is in the client, but this will try to handle unknowns. The risk is if the client sends more than one packet in a stream, which I don't think it will do.
+
+            if (size == -1)
+            {
+                expectedSize = packet.g1();
+            }
+
+            //from here we can send the packet thru our PacketManager. Since the position information travels with the packet, it will be read correctly even though it still contains the opcode and potentially size information.
+            //PacketManager.handle(opcode, packet, expectedSize);
+
+            Console.WriteLine($"Decoding packet - opcode = ${opcode}, size = ${expectedSize}");
         }
     }
 }
