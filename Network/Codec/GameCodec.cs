@@ -36,21 +36,33 @@ namespace Silvarea.Network.Codec
 
         public static void Decode(Session session, int size)
         {
+            if (size < 1)
+                return;
+
             Packet packet = new Packet(session.inBuffer);
-            int opcode = packet.g1();
-            opcode += session.inCipher.val();
+            int opcode = (packet.g1() - session.inCipher.val()) & 0xff;
+            //opcode -= session.inCipher.val();
 
             int expectedSize = size - 1;//load in packet size array thru config load (io.json). Unfortunately, I don't think this one is in the client, but this will try to handle unknowns. The risk is if the client sends more than one packet in a stream, which I don't think it will do.
 
             if (size == -1)
             {
+                Console.WriteLine("We shouldn't be here");
                 expectedSize = packet.g1();
+            }
+            //TODO Don't hardcode this
+            if (opcode == 153)
+            {
+                int known = packet.g4();//has set value in client... 1057001181
+                int checkVal = packet.g1() - session.inCipher.val();//Should be 91. This was throwing me off, advancing Isaac Cipher by 1... this is absolutely necessary to handle when using Isaac!
+                Console.WriteLine($"Packet 153 (Isaac Verify?) handled, known = {known}, checkVal = {checkVal}");
+                return;
             }
 
             //from here we can send the packet thru our PacketManager. Since the position information travels with the packet, it will be read correctly even though it still contains the opcode and potentially size information.
             //PacketManager.handle(opcode, packet, expectedSize);
 
-            Console.WriteLine($"Decoding packet - opcode = ${opcode}, size = ${expectedSize}");
+            Console.WriteLine($"Decoding packet - opcode = {opcode}, size = {expectedSize}");
         }
     }
 }
