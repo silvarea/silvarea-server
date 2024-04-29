@@ -38,15 +38,11 @@ namespace Silvarea.Cache
         public Compression ConfigureCompression(int compression)
         {
             if (compression == 0)
-            {
                 return Compression.NONE;
-            } else if (compression == 1)
-            {
+            else if (compression == 1)
                 return Compression.BZIP;
-            } else
-            {
+            else
                 return Compression.GZIP;
-            }
         }
 
         public byte[] toByteArray()

@@ -15,6 +15,7 @@ namespace Silvarea.Utility
 		// Absolutely, 100% lifted this code from ACE and updated it slightly. 
 		public static void Initialize()
 		{
+			Console.WriteLine("Importing server configuration...");
 			var configFile = @"config.json";
 
 			var directoryName = Path.GetDirectoryName(configFile);
@@ -60,6 +61,7 @@ namespace Silvarea.Utility
 				Console.WriteLine("An exception occured while loading the configuration file!");
 				Console.WriteLine($"Exception: {ex.Message}");
 			}
-		}
+            Console.WriteLine("Server configuration loaded.");
+        }
 	}
 }

@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Threading;
 using Silvarea.Utility;
+using Silvarea.Network.Codec;
 
 namespace Silvarea.Network
 {
@@ -116,16 +117,16 @@ namespace Silvarea.Network
             switch (CurrentState)
             {
                 case RS2ConnectionState.HANDSHAKE:
-                    ProtocolDecoder.Handshake(this, received);
+                    ProtocolCodec.Handshake(this, received);
                     break;
                 case RS2ConnectionState.UPDATE:
-                    ProtocolDecoder.Update(this, received);
+                    ProtocolCodec.Update(this, received);
                     break;
                 case RS2ConnectionState.LOGIN:
-                    ProtocolDecoder.Login(this, received);
+                    LoginCodec.Login(this, received);
                     break;
                 case RS2ConnectionState.GAME:
-                    ProtocolDecoder.Decode(this, received);
+                    GameCodec.Decode(this, new Packet(inBuffer), received);
                     break;
                 default:
                     SocketManager.Disconnect(this);

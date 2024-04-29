@@ -10,29 +10,35 @@ namespace Silvarea.Network
 
 		private BinaryWriter _streamWriter {  get; set; }
 
-		public int _opcode { get; set; }
+		public int Opcode { get; set; }
+
+		public Packet()
+		{
+			Opcode = -1;
+			initPacket(new MemoryStream());
+		}
 
 		public Packet(int opcode, byte[] data)
 		{
-			_opcode = opcode;
+			Opcode = opcode;
 			initPacket(data);
         }
 
 		public Packet(byte[] data)
 		{
-			_opcode = -1;
+			Opcode = -1;
 			initPacket(data);
         }
 
 		public Packet(int opcode, Stream data)
 		{
-			_opcode = opcode;
+			Opcode = opcode;
 			initPacket(data);
 		}
 
         public Packet(Stream data)
         {
-            _opcode = -1;
+            Opcode = -1;
             initPacket(data);
         }
 
@@ -109,27 +115,6 @@ namespace Silvarea.Network
 
 		}
 
-		public void p4(int value)
-		{
-			_streamWriter.Write((sbyte) (value >> 24));
-            _streamWriter.Write((sbyte) (value >> 16));
-            _streamWriter.Write((sbyte) (value >> 8));
-            _streamWriter.Write((sbyte) value);
-        }
-
-		public void p3(int value)
-		{
-			_streamWriter.Write((sbyte) (value >> 16));
-            _streamWriter.Write((sbyte) (value >> 8));
-            _streamWriter.Write((sbyte) value);
-        }
-
-		public void p2(int value)
-		{
-            _streamWriter.Write((sbyte) (value >> 8));
-            _streamWriter.Write((sbyte) value);
-        }
-
 		public void p1(int value)
 		{
 			_streamWriter.Write((sbyte) value);
@@ -137,13 +122,34 @@ namespace Silvarea.Network
 
 		public void p1_alt3(int value)
 		{
-			_streamWriter.Write((byte) (value + 128));//sbyte
+			_streamWriter.Write((sbyte) (value + 128));
 		}
 
-		public void p2_alt1(int value)
+        public void p2(int value)
+        {
+            _streamWriter.Write((sbyte)(value >> 8));
+            _streamWriter.Write((sbyte)value);
+        }
+
+        public void p2_alt1(int value)
 		{
             _streamWriter.Write((sbyte)value);
             _streamWriter.Write((sbyte)(value >> 8));
+        }
+
+        public void p3(int value)
+        {
+            _streamWriter.Write((sbyte)(value >> 16));
+            _streamWriter.Write((sbyte)(value >> 8));
+            _streamWriter.Write((sbyte)value);
+        }
+
+        public void p4(int value)
+        {
+            _streamWriter.Write((sbyte)(value >> 24));
+            _streamWriter.Write((sbyte)(value >> 16));
+            _streamWriter.Write((sbyte)(value >> 8));
+            _streamWriter.Write((sbyte)value);
         }
 
         public void p4_alt1(int value)
