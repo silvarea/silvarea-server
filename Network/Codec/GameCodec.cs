@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Silvarea.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,57 +13,64 @@ namespace Silvarea.Network.Codec
         public static void Encode(Session session, Packet packet)
         {
             Packet encodedPacket = new Packet();
-            if (packet._opcode == -1)
+            if (packet.Opcode == -1)
             {
                 session.Stream.Write(packet.toByteArray());
                 return;
             }
 
-            encodedPacket.p1((byte) (packet._opcode += session.outCipher.val()));
+            int size = (int)ConfigurationManager.Config.PacketSizes.OutgoingPackets[packet.Opcode];
 
-            int size = (int) packet.Length;//load in packet size array from client thru config loader (io.json) and check sizes here.
+            encodedPacket.p1((byte)(packet.Opcode += session.outCipher.val()));
 
             if (size == -1) //VAR_BYTE
             {
-                encodedPacket.p1((byte) packet.Length);
-            } 
+                encodedPacket.p1((byte)packet.Length);
+            }
             else if (size == -2) //VAR_SHORT
             {
-                encodedPacket.p2((short) packet.Length);
+                encodedPacket.p2((short)packet.Length);
             }
-            encodedPacket.pdata(packet.toByteArray(), (int) packet.Length);
+            encodedPacket.pdata(packet.toByteArray(), (int)packet.Length);
             session.Stream.Write(encodedPacket.toByteArray());
         }
 
-        public static void Decode(Session session, int size)
+        public static void Decode(Session session, Packet packet, int size)
         {
             if (size < 1)
                 return;
 
-            Packet packet = new Packet(session.inBuffer);
+            int readableBytes = size;
+
             int opcode = (packet.g1() - session.inCipher.val()) & 0xff;
-            //opcode -= session.inCipher.val();
+            readableBytes -= 1;
 
-            int expectedSize = size - 1;//load in packet size array thru config load (io.json). Unfortunately, I don't think this one is in the client, but this will try to handle unknowns. The risk is if the client sends more than one packet in a stream, which I don't think it will do.
+            int expectedSize = ConfigurationManager.Config.PacketSizes.IncomingPackets[opcode];//load in packet size array thru config load (io.json). Unfortunately, I don't think this one is in the client, but this will try to handle unknowns. The risk is if the client sends more than one packet in a stream, which I don't think it will do.
 
-            if (size == -1)
+            if (expectedSize == -1)
             {
-                Console.WriteLine("We shouldn't be here");
                 expectedSize = packet.g1();
+                readableBytes -= 1;
             }
-            //TODO Don't hardcode this
-            if (opcode == 153)
+            else if (expectedSize == -3)
             {
-                int known = packet.g4();//has set value in client... 1057001181
-                int checkVal = packet.g1() - session.inCipher.val();//Should be 91. This was throwing me off, advancing Isaac Cipher by 1... this is absolutely necessary to handle when using Isaac!
-                Console.WriteLine($"Packet 153 (Isaac Verify?) handled, known = {known}, checkVal = {checkVal}");
-                return;
+                expectedSize = (size - 1);//If more than one packet is received inbetween reads and one is unhandled (-3 length) we will lose all of the packets in the read, throwing the Isaac cipher out of sync and ruining the connection.
             }
+            readableBytes -= (expectedSize);
 
+            byte[] decodedData = new byte[expectedSize];
+            packet.Read(decodedData);
+            Packet decodedPacket = new Packet(opcode, decodedData);
+
+            if (readableBytes > 0)
+            {
+                byte[] data = new byte[readableBytes];
+                packet.Read(data);
+                Decode(session, new Packet(data), readableBytes);
+            }
             //from here we can send the packet thru our PacketManager. Since the position information travels with the packet, it will be read correctly even though it still contains the opcode and potentially size information.
-            //PacketManager.handle(opcode, packet, expectedSize);
+            //PacketManager.handle(decodedPacket);
 
-            Console.WriteLine($"Decoding packet - opcode = {opcode}, size = {expectedSize}");
         }
     }
 }

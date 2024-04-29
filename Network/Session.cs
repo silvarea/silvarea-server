@@ -126,7 +126,7 @@ namespace Silvarea.Network
                     LoginCodec.Login(this, received);
                     break;
                 case RS2ConnectionState.GAME:
-                    GameCodec.Decode(this, received);
+                    GameCodec.Decode(this, new Packet(inBuffer), received);
                     break;
                 default:
                     SocketManager.Disconnect(this);
