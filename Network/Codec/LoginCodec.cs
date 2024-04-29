@@ -41,7 +41,7 @@ namespace Silvarea.Network.Codec
 
                     byte[] encryptedData = new byte[encryptedSize];
                     packet.Read(encryptedData, 0, encryptedSize);
-                    Packet decryptedPacket = new Packet(new BigInteger(encryptedData).ModPow(new BigInteger(ConfigurationManager.Config.GameServerConfiguration.exponent), new BigInteger(ConfigurationManager.Config.GameServerConfiguration.modulus)).ToByteArray());
+                    Packet decryptedPacket = new Packet(new BigInteger(encryptedData).ModPow(new BigInteger(ConfigurationManager.Config.GameServerConfiguration.Exponent), new BigInteger(ConfigurationManager.Config.GameServerConfiguration.Modulus)).ToByteArray());
 
 
                     int blockOpcode = decryptedPacket.g1();
@@ -128,7 +128,7 @@ namespace Silvarea.Network.Codec
             return loginReply;
         }
 
-        public static Packet TestMap(Session session) //TODO Delete this when you're done playing around
+        public static Packet TestMap(Session session) //TODO Delete this when PacketManager system complete
         {
             int playerX = 3370;
             int playerY = 3485;
@@ -141,9 +141,7 @@ namespace Silvarea.Network.Codec
 
             Packet locPacket = new Packet(new MemoryStream());
             int opcode = 122 + session.outCipher.val();
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
             locPacket.p2_alt1(localX);
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
             for (int xCalc = (regionX - 6) / 8; xCalc <= ((regionX + 6) / 8); xCalc++)
             {
                 for (int yCalc = (regionY - 6) / 8; yCalc <= ((regionY + 6) / 8); yCalc++)
@@ -151,42 +149,24 @@ namespace Silvarea.Network.Codec
                     int region = yCalc + (xCalc << 8);
                     if ((yCalc != 49) && (yCalc != 149) && (yCalc != 147) && (xCalc != 50) && ((xCalc != 49) || (yCalc != 47)))
                     {
-                        Console.WriteLine("Sending keys! another 16 bytes!");
                         for (int i = 0; i < 4; i++)
                         {
-                            locPacket.p4(0);//do some xtea key loading
+                            locPacket.p4(0);//TODO XTEA key loading
                         }
                     }
                 }
             }
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
             locPacket.p2_alt1(regionY);
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
             locPacket.p2_alt1(localY);
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
             locPacket.p1_alt3(3);//z coord
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
             locPacket.p2(regionX);
-            Console.WriteLine("Packet size = " + locPacket.Length + ", Position = " + locPacket.Position);
-            Console.WriteLine("regionY = " + regionY + ", regionX = " + regionX + ", localY = " + localY + ", localX = " + localX);
             byte[] locData = locPacket.toByteArray();
             locPacket.Dispose();
 
             Packet packet = new Packet(new MemoryStream());
             packet.p1(opcode);
-            Console.WriteLine("Sending packet size = " + (locData.Length));//+1 for only opcode? or +3 for opcode+size info...?
             packet.p2((int)locData.Length);//packet size, we're getting into encoding territory. This is VAR_SHORT because it sends the packet size to the client as a short value, since it might be higher than a byte, depending on variables.
             packet.pdata(locData, locData.Length);
-            //packet.p2(regionX);
-
-
-            //g2_alt1 - local x or y
-            //XTEA keys
-            //g2_alt1 - region y
-            //g2_alt1 - local x or y
-            //g1_alt3 - z coord
-            //g2 - region x
-
             return packet;
         }
 

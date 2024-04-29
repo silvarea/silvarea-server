@@ -61,10 +61,5 @@ namespace Silvarea.Network
             if (sessions.Contains(s))
                 sessions.Remove(s);
         }
-
-        public void Close()
-        {
-
-        }
     }
 }
