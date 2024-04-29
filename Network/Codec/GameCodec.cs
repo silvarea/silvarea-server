@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Silvarea.Network.Codec
 {
-    internal class GameCodec
+    public class GameCodec
     {
 
         public static void Encode(Session session, Packet packet)

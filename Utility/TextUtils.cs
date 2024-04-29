@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Silvarea.Utility
 {
-    internal class TextUtils
+    public class TextUtils
     {
 
         private static readonly char[] VALID_CHARS = {

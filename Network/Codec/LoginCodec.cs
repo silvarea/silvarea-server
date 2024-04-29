@@ -12,7 +12,7 @@ using Silvarea.Game.Entities;
 
 namespace Silvarea.Network.Codec
 {
-    internal class LoginCodec
+    public class LoginCodec
     {
 
         public static void Login(Session session, int size)
