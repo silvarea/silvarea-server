@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Silvarea.Game.Entities;
+using Silvarea.Game.Zones;
 
 namespace Silvarea.Network.Codec
 {
@@ -104,7 +105,9 @@ namespace Silvarea.Network.Codec
             //TODO Don't hardcode this
             player = new Player(username, password, session, 2, isLowMemory, true);
             World.Players.Add(player);
-
+            ZoneManager.GetZone(player.Position.X, player.Position.Z, player.Position.Level).AddPlayer(player);
+            Console.WriteLine($"Zone Count: {ZoneManager.Zones.Count} Total Players: {ZoneManager.GetZone(player.Position.X, player.Position.Z, player.Position.Level).Players.Count}");
+           
             LoginReturnCode returnCode = LoginReturnCode.SUCCESS;
             return GenerateReply(player, returnCode);
         }
@@ -116,10 +119,10 @@ namespace Silvarea.Network.Codec
             switch (returnCode)
             {
                 case LoginReturnCode.SUCCESS:
-                    loginReply.p1(player._rights);//player rights; 0 = player, 1 = pmod, 2 = jmod
+                    loginReply.p1(player.Rights);//player rights; 0 = player, 1 = pmod, 2 = jmod
                     loginReply.p1(0);//bot flag, makes the client send mouse tracking packets back to server if set to 1; incoming packet opcode = 94 for 410
                     loginReply.p2(World.Players.IndexOf(player));//player index
-                    loginReply.p1(player._members ? 1 : 0);//1 = members, 0 = free
+                    loginReply.p1(player.IsMembers ? 1 : 0);//1 = members, 0 = free
                     break;
                 case LoginReturnCode.TRANSFER_DELAY:
                     loginReply.p1(30);//number of seconds before logging in
