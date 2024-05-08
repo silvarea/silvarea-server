@@ -18,5 +18,8 @@
       <TargetPath>%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="Game\Entities\NewFile1.txt" />
+  </ItemGroup>
 
 </Project>

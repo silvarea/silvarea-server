@@ -31,6 +31,8 @@ namespace Silvarea.Network.Codec
             {
                 encodedPacket.p2((short)packet.Length);
             }
+            byte[] data = packet.toByteArray();
+            Console.WriteLine($"Packet size = {packet.Length}, data size = {data.Length}");
             encodedPacket.pdata(packet.toByteArray(), (int)packet.Length);
             session.Stream.Write(encodedPacket.toByteArray());
         }

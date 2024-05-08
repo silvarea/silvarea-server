@@ -2,8 +2,10 @@
 
 namespace Silvarea.Network
 {
+
 	public class Packet : Stream
 	{
+		private static int[] BIT_MASKS = new int[32];
 		private BufferedStream _stream { get; set; }
 
 		private BinaryReader _streamReader {  get; set; }
@@ -21,13 +23,13 @@ namespace Silvarea.Network
 		public Packet(int opcode, byte[] data)
 		{
 			Opcode = opcode;
-			initPacket(data);
+			initPacket(new MemoryStream(data));
         }
 
 		public Packet(byte[] data)
 		{
 			Opcode = -1;
-			initPacket(data);
+			initPacket(new MemoryStream(data));
         }
 
 		public Packet(int opcode, Stream data)
@@ -42,15 +44,22 @@ namespace Silvarea.Network
             initPacket(data);
         }
 
-        private void initPacket(byte[] data)
+		public Packet(int opcode)
 		{
-			_stream = new BufferedStream(new MemoryStream(data));
-            if(_stream.CanRead) _streamReader = new BinaryReader(_stream);
-            if(_stream.CanWrite) _streamWriter = new BinaryWriter(_stream);
-        }
+			Opcode = opcode;
+			initPacket(new MemoryStream());
+		}
+
+		static Packet()
+		{
+			for (int i = 0; i < 32; i++)
+				BIT_MASKS[i] = ((1 <<  i) - 1);
+		}
 
 		private void initPacket(Stream data)
 		{
+			
+
 			_stream = new BufferedStream(data);
 			if(_stream.CanRead)  _streamReader = new BinaryReader(_stream);
 			if(_stream.CanWrite) _streamWriter = new BinaryWriter(_stream);
@@ -65,6 +74,8 @@ namespace Silvarea.Network
 		public override long Length => _stream.Length;
 
 		public override long Position { get => _stream.Position; set => _stream.Position = value; }
+
+		public int BitPosition;
 
 		public override void Flush()
 		{
@@ -91,6 +102,17 @@ namespace Silvarea.Network
 			_stream.Write(buffer, offset, count);
 		}
 
+		public void openBitBuffer()
+		{
+			_stream.SetLength(5);
+			BitPosition = (int) (Position * 8);
+		}
+
+		public void closeBitBuffer()
+		{
+			Position = ((BitPosition + 7) / 8) >>> 0;
+		}
+
 		public void p8(long value)
 		{
 			_streamWriter.Write((sbyte) (value >> 56));
@@ -107,6 +129,14 @@ namespace Silvarea.Network
 		{
 			_streamWriter.Write(data, 0, count);
 
+		}
+
+		public void pdata_alt1(byte[] data, int count)
+		{
+			//Array.Reverse(data, count, data.Length);
+			//pdata(data, data.Length);
+			for(int i = count - 1; i >= 0; i--)
+				p1(data[i]);
 		}
 
 		public void pjstr(string str)
@@ -159,6 +189,67 @@ namespace Silvarea.Network
             _streamWriter.Write((sbyte) (value >> 16));
             _streamWriter.Write((sbyte) (value >> 24));
         }
+
+		public void pBits(int count, int value)
+		{
+			int bytePosition = BitPosition >> 3;
+			int offset = 8 - (BitPosition & 7);
+			BitPosition += count;
+			for (; count > offset; offset = 8)
+			{
+				_stream.Position = bytePosition;
+				int temp = g1();
+				temp &= ~BIT_MASKS[offset];
+				temp |= (value >> (count - offset)) & BIT_MASKS[offset];
+                _stream.Position = bytePosition;
+				p1(temp);
+				count -= offset;
+            }
+			if (count == offset)
+			{
+                _stream.Position = bytePosition;
+                int temp = g1();
+                temp &= ~BIT_MASKS[offset];
+				temp |= value & BIT_MASKS[offset];
+				Position--;
+                p1(temp);
+				Position--;
+            } else
+			{
+                _stream.Position = bytePosition;
+                int temp = g1();
+                temp &= ~BIT_MASKS[offset];
+                temp |= (value & BIT_MASKS[count]) << (offset - count);
+				Position--;
+                p1(temp);
+				Position--;
+            }
+		}
+
+		public int gBits(int count)
+		{
+			int bytePosition = BitPosition >>> 3;
+			int remaining = 8 - (BitPosition & 7);
+			int value = 0;
+			BitPosition += count;
+
+			for (; count > remaining; remaining = 8)
+			{
+				value += (g1() & BIT_MASKS[remaining]) << (count - remaining);
+				count -= remaining;
+			}
+
+			if (count == remaining)
+			{
+				value += g1() & BIT_MASKS[remaining];
+				Position--;
+			} else
+			{
+				value += (g1() >>> (remaining - count)) & BIT_MASKS[count];
+				Position--;
+			}
+			return value;
+		}
 
         public int g1()
 		{

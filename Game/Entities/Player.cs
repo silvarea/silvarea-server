@@ -10,6 +10,8 @@ namespace Silvarea.Game.Entities
         public string Username {  get; set; }
         public string Password { get; set; }
 
+        public long Username37 { get; set; }
+
         public int Rights {  get; set; }
 		public long Uid { get; set; }
         public int Pid { get; set; }
@@ -21,6 +23,8 @@ namespace Silvarea.Game.Entities
 
 		public Position Position { get; set; } = new Position(3370, 3485, 0);
 
+        public PlayerUpdateMasks UpdateMasks { get; set; }
+
         public Player(string username, string password, Session session, int rights, bool isLowMemory, bool members)
         {
             Username = username;
@@ -30,6 +34,7 @@ namespace Silvarea.Game.Entities
             IsLowMemory = isLowMemory;
             IsMembers = members;
 			Uid = GenerateUid();
+            Username37 = TextUtils.playerNameToLong(username);
         }
 
         public void Send(Packet packet)

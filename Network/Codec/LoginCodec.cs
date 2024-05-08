@@ -82,6 +82,10 @@ namespace Silvarea.Network.Codec
 
                     //TODO Don't hardcode this
                     session.Stream.Write(TestMap(session).toByteArray());
+
+                    foreach (Player p in World.Players)
+                        PlayerSync.Update(p);
+
                 }
                 else
                 {

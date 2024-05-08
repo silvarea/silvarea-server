@@ -26,7 +26,7 @@ namespace Silvarea.Network.Codec
                         }
                         break;
                     case RS2ConnectionState.LOGIN:
-                        Console.WriteLine("Login... what is this... client state? " + packet.g1());
+                        int nameHash = packet.g1(); //unused by us
                         Random rand = new Random();
                         session.serverKey = ((long)(rand.NextDouble() * 99999999D) << 32) + (long)(rand.NextDouble() * 99999999D);
                         Packet loginReply = new Packet(-1, new byte[9]);
