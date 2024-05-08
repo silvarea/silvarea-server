@@ -21,15 +21,20 @@ namespace Silvarea.Network.Codec
 
             int size = (int)ConfigurationManager.Config.PacketSizes.OutgoingPackets[packet.Opcode];
 
-            encodedPacket.p1((byte)(packet.Opcode += session.outCipher.val()));
+            if (packet.Opcode == 170)
+            {
+                Console.WriteLine($"Update Packet Size {size}");
+            }
+
+            encodedPacket.p1((byte) (packet.Opcode += session.outCipher.val()));
 
             if (size == -1) //VAR_BYTE
             {
-                encodedPacket.p1((byte)packet.Length);
+                encodedPacket.p1((byte) packet.Length);
             }
             else if (size == -2) //VAR_SHORT
             {
-                encodedPacket.p2((short)packet.Length);
+                encodedPacket.p2((short) packet.Length);
             }
             byte[] data = packet.toByteArray();
             Console.WriteLine($"Packet size = {packet.Length}, data size = {data.Length}");

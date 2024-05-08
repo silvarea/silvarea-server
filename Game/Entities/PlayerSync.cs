@@ -11,45 +11,60 @@ namespace Silvarea.Game.Entities
 {
     public class PlayerSync
     {
-
         public static void Update(Player player) {
 
             player.UpdateMasks |= PlayerUpdateMasks.APPEARANCE;
 
+			//check if player's location changes constitute a region change, if so sendMapRegion();
 
-            //check if player's location changes constitute a region change, if so sendMapRegion();
+			Packet byteBlock = new Packet();
+            Packet bitBlock = new Packet(170);
 
-            Packet updateBlock = new Packet();
-            Packet updatePacket = new Packet(170);
-            updatePacket.openBitBuffer();
+            bitBlock.openBitBuffer();
+            bitBlock.pBits(1, 1);//are we movin? 0 = no
 
-            updatePacket.pBits(1, 0);//are we movin? 0 = no
-            //UpdatePlayerMovement(player, updatePacket);
+            if (true)
+            {
+				bitBlock.pBits(2, 3); // Update Type
+
+				bitBlock.pBits(7, player.Position.X); // Not sure
+
+				bitBlock.pBits(2, player.Position.Level); // This one is correct 5 sure
+
+				bitBlock.pBits(1, 1);
+
+				bitBlock.pBits(1, 1);
+
+				bitBlock.pBits(7, player.Position.Z); // Not Sure
+            }
+
+
+			//UpdatePlayerMovement(player, bitBlock);
 
             // TODO: Have an observed players and NPCs Sets on the player.
-            var playersInZone = ZoneManager.GetZone(player.Position.X, player.Position.Z, player.Position.Level).Players;
+            //var playersInZone = ZoneManager.GetZone(player.Position.X, player.Position.Z, player.Position.Level).Players;
 
-            updatePacket.pBits(8, playersInZone.Count);//player count
+            //bitBlock.pBits(8, playersInZone.Count);//player count
 
-			foreach (var p in playersInZone)
-            {
-                var curPlayer = World.getPlayerByUid(p);
+            //foreach (var p in playersInZone)
+            //{
+            //    var curPlayer = World.getPlayerByUid(p);
 
-				updatePacket.pBits(1, 1);// player needs updating
-                UpdatePlayerMovement(curPlayer, updatePacket);
-                //if otherPlayer requires an update
-                    UpdatePlayer(curPlayer, updatePacket);
-            }
-            foreach (var p in playersInZone)
-            {
-                var curPlayer = World.getPlayerByUid(p);
-                updatePacket.p1((byte)curPlayer.UpdateMasks);
-                AppearanceUpdate(curPlayer, updateBlock);
-            }
-            updatePacket.pBits(11, 2047);
-            updatePacket.closeBitBuffer();
-            updatePacket.pdata(updateBlock.toByteArray(), (int) updateBlock.Length);
-            player.Send(updatePacket);
+            //    bitBlock.pBits(1, 1);// player needs updating
+            //    UpdatePlayerMovement(curPlayer, bitBlock);
+            //    //if otherPlayer requires an update
+            //    UpdatePlayer(curPlayer, bitBlock);
+            //}
+            //foreach (var p in playersInZone)
+            //{
+            //    var curPlayer = World.getPlayerByUid(p);
+            //    bitBlock.p1((byte)curPlayer.UpdateMasks);
+            //    AppearanceUpdate(curPlayer, byteBlock);
+            //}
+            //bitBlock.pBits(11, 2047);
+            bitBlock.closeBitBuffer();
+            bitBlock.pdata(byteBlock.toByteArray(), (int) byteBlock.Length);
+            player.Send(bitBlock);
 
             //AppearanceUpdate(player, updatePacket);
 
