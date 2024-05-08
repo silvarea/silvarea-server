@@ -243,57 +243,9 @@ namespace Silvarea.Network
 
 			//var mem = new MemoryStream(memStream);
 			//mem.CopyTo(_stream);
-			_streamWriter.Write(memStream);
+			//_streamWriter.Write(memStream);
 			//_stream.Write(memStream, 0, memStream.Length);
-		}
-
-		public void pBits2(int count, int value)
-		{
-			int bytePosition = BitPosition >> 3;
-			int offset = 8 - (BitPosition & 7);
-			BitPosition += count;
-
-			if ((bytePosition + 1) > Length)
-			{
-				SetLength(bytePosition + 1);
-			}
-
-			for (; count > offset; offset = 8)
-			{
-				_stream.Position = bytePosition;
-				int temp = g1();
-				temp &= ~BitMasks[offset];
-				temp |= (value >> (count - offset)) & BitMasks[offset];
-				_stream.Position = bytePosition;
-				p1(temp);
-				count -= offset;
-
-				if ((bytePosition + 1) > Length)
-				{
-					SetLength(bytePosition + 1);
-				}
-
-			}
-			if (count == offset)
-			{
-				_stream.Position = bytePosition;
-				int temp = g1();
-				temp &= ~BitMasks[offset];
-				temp |= value & BitMasks[offset];
-				Position--;
-				p1(temp);
-				Position--;
-			}
-			else
-			{
-				_stream.Position = bytePosition;
-				int temp = g1();
-				temp &= ~BitMasks[offset] << (offset - count);
-				temp |= (value & BitMasks[count]) << (offset - count);
-				Position--;
-				p1(temp);
-				Position--;
-			}
+			_stream.Write(memStream);
 		}
 
 		public int gBits(int n)
@@ -304,12 +256,6 @@ namespace Silvarea.Network
 			BitPosition += n;
 
 			byte[] data = toByteArray();
-
-			//using (var memoryStream = new MemoryStream())
-			//{
-			//	_stream.CopyTo(memoryStream);
-			//	memStream = memoryStream.ToArray();
-			//}
 
 			for (; n > remaining; remaining = 8)
 			{
@@ -326,25 +272,6 @@ namespace Silvarea.Network
 				value += (data[bytePosition] >>> (remaining - n)) & BitMasks[n];
 			}
 
-			//var mem = new MemoryStream(data);
-			//mem.CopyTo(_stream);
-
-			//for (; n > remaining; remaining = 8)
-			//{
-			//	value += (g1() & BitMasks[remaining]) << (n - remaining);
-			//	n -= remaining;
-			//}
-
-			//if (n == remaining)
-			//{
-			//	value += g1() & BitMasks[remaining];
-			//	Position--;
-			//}
-			//else
-			//{
-			//	value += (g1() >>> (remaining - n)) & BitMasks[n];
-			//	Position--;
-			//}
 			return value;
 		}
 

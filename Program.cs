@@ -27,16 +27,16 @@ namespace Silvarea
 
 			bitBlock.openBitBuffer();
 
-			//bitBlock.pBits(1, 0);
-			//bitBlock.pBits(4, 3);
+			bitBlock.pBits(1, 0);
+			bitBlock.pBits(4, 3);
 			bitBlock.pBits(7, 13);
 
 			bitBlock.closeBitBuffer();
 
 			Packet bitsTime = new Packet(bitBlock);
 
-			//Console.WriteLine($"GBits is {bitsTime.gBits(1)}");
-			//Console.WriteLine($"GBits is {bitsTime.gBits(4)}");
+			Console.WriteLine($"GBits is {bitsTime.gBits(1)}");
+			Console.WriteLine($"GBits is {bitsTime.gBits(4)}");
 			Console.WriteLine($"GBits is {bitsTime.gBits(7)}");
 
 			Packet packet = new Packet();
