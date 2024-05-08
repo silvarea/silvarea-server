@@ -195,7 +195,13 @@ namespace Silvarea.Network
 			int bytePosition = BitPosition >> 3;
 			int offset = 8 - (BitPosition & 7);
 			BitPosition += count;
-			for (; count > offset; offset = 8)
+
+            if ((bytePosition + 1) > Length)
+            {
+                SetLength(bytePosition + 1);
+            }
+
+            for (; count > offset; offset = 8)
 			{
 				_stream.Position = bytePosition;
 				int temp = g1();
@@ -204,6 +210,12 @@ namespace Silvarea.Network
                 _stream.Position = bytePosition;
 				p1(temp);
 				count -= offset;
+
+                if ((bytePosition + 1) > Length)
+                {
+                    SetLength(bytePosition + 1);
+                }
+
             }
 			if (count == offset)
 			{
