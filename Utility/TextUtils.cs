@@ -40,15 +40,30 @@ namespace Silvarea.Utility
 
         public static long playerNameToLong(String s)
         {
+            var name = s.ToCharArray();
             long l = 0L;
-            foreach (char c in s.ToCharArray())
+            for (int i = 0; i < s.Length && i < 12; i++)
             {
+                var c = name[i];
+
                 l *= 37L;
-                if (c >= 'A' && c <= 'Z') l += (1 + c) - 65;
-                else if (c >= 'a' && c <= 'z') l += (1 + c) - 97;
-                else if (c >= '0' && c <= '9') l += (27 + c) - 48;
+                if (c >= 65 && c <= 90)
+                {
+                    l += (1 + c) - 65;
+                }
+                else if (c >= 97 && c <= 122)
+                {
+                    l += c - 96;
+                }
+                else if (c >= 48 && c <= 57)
+                {
+                    l += (27 + c) - 48;
+                }
             }
-            while (l % 37L == 0L && l != 0L) l /= 37L;
+            while (l % 37L == 0L && l != 0L)
+            {
+                l /= 37L;
+            }
             return l;
         }
 

@@ -127,15 +127,12 @@ namespace Silvarea.Network
 		public void pdata(byte[] data, int count)
 		{
 			_streamWriter.Write(data, 0, count);
-
 		}
 
-		public void pdata_alt1(byte[] data, int count)
+		public void pdata_alt1(byte[] data)
 		{
-			Array.Reverse(data, count, data.Length);
+			Array.Reverse(data, 0, data.Length);
 			pdata(data, data.Length);
-			//for(int i = count - 1; i >= 0; i--)
-			//	p1(data[i]);
 		}
 
 		public void pjstr(string str)
@@ -151,7 +148,7 @@ namespace Silvarea.Network
 
 		public void p1_alt3(int value)
 		{
-			_streamWriter.Write((sbyte) (value + 128));
+			_streamWriter.Write((sbyte) (128 - value));
 		}
 
         public void p2(int value)
@@ -195,57 +192,50 @@ namespace Silvarea.Network
 			int remaining = 8 - (BitPosition & 7);
 			BitPosition += n;
 
-			byte[] memStream = toByteArray(); // [];
+			var prevPos = _stream.Position;
 
-			//using (var memoryStream = new MemoryStream())
-			//{
-			//	_stream.CopyTo(memoryStream);
-			//	memStream = memoryStream.ToArray();
-			//}
+			byte[] data = toByteArray(); // [];
 
-			if (bytePosition + 1 > memStream.Length)
+			if (bytePosition + 1 > data.Length)
 			{
-				if (memStream.Length < bytePosition + 1)
+				if (data.Length < bytePosition + 1)
 				{
-					var temp = new MemoryStream(bytePosition + 1);
-					temp.SetLength(bytePosition + 1);
-					memStream = temp.ToArray();
+					var temp = new byte[bytePosition + 1];
+					Array.Copy(data, temp, data.Length);
+					data = temp;
 				}
 			}
 
 			for (; n > remaining; remaining = 8)
 			{
-				memStream[bytePosition] &= (byte)(~BitMasks[remaining]);
-				memStream[bytePosition++] |= (byte)((value >> (n - remaining)) & BitMasks[remaining]);
+				data[bytePosition] &= (byte)(~BitMasks[remaining]);
+				data[bytePosition++] |= (byte)((value >> (n - remaining)) & BitMasks[remaining]);
 				n -= remaining;
 
-				if (bytePosition + 1 > memStream.Length)
+				if (bytePosition + 1 > data.Length)
 				{
-					if (memStream.Length < bytePosition + 1)
+					if (data.Length < bytePosition + 1)
 					{
-						var temp = new MemoryStream(bytePosition + 1);
-						temp.SetLength(bytePosition + 1);
-						memStream = temp.ToArray();
+						var temp = new byte[bytePosition + 1];
+						Array.Copy(data, temp, data.Length);
+						data = temp;
 					}
 				}
 			}
 
 			if (n == remaining)
 			{
-				memStream[bytePosition] &= (byte)(~BitMasks[remaining]);
-				memStream[bytePosition] |= (byte)(value & BitMasks[remaining]);
+				data[bytePosition] &= (byte)(~BitMasks[remaining]);
+				data[bytePosition] |= (byte)(value & BitMasks[remaining]);
 			}
 			else
 			{
-				memStream[bytePosition] &= (byte)(~BitMasks[remaining] << (remaining - n));
-				memStream[bytePosition] |= (byte)((value & BitMasks[remaining]) << (remaining - n));
+				data[bytePosition] &= (byte)(~BitMasks[n] << (remaining - n));
+				data[bytePosition] |= (byte)((value & BitMasks[n]) << (remaining - n));
 			}
 
-			//var mem = new MemoryStream(memStream);
-			//mem.CopyTo(_stream);
-			//_streamWriter.Write(memStream);
-			//_stream.Write(memStream, 0, memStream.Length);
-			_stream.Write(memStream);
+			Position = 0;
+			_streamWriter.Write(data);
 		}
 
 		public int gBits(int n)

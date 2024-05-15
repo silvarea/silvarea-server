@@ -17,8 +17,8 @@ namespace Silvarea.Game.Entities
 
 			//check if player's location changes constitute a region change, if so sendMapRegion();
 
-			Packet byteBlock = new Packet();
-            Packet bitBlock = new Packet(170);
+			Packet byteBlock = new Packet(170);
+            Packet bitBlock = new Packet();
 
             bitBlock.openBitBuffer();
             bitBlock.pBits(1, 1);//are we movin? 0 = no
@@ -27,7 +27,7 @@ namespace Silvarea.Game.Entities
             {
 				bitBlock.pBits(2, 3); // Update Type
 
-				bitBlock.pBits(7, player.Position.X); // Not sure
+				bitBlock.pBits(7, player.Position.LocalX); // Not sure
 
 				bitBlock.pBits(2, player.Position.Level); // This one is correct 5 sure
 
@@ -35,16 +35,16 @@ namespace Silvarea.Game.Entities
 
 				bitBlock.pBits(1, 1);
 
-				bitBlock.pBits(7, player.Position.Z); // Not Sure
+				bitBlock.pBits(7, player.Position.LocalZ); // Not Sure
             }
 
 
-			//UpdatePlayerMovement(player, bitBlock);
+            //UpdatePlayerMovement(player, bitBlock);
 
             // TODO: Have an observed players and NPCs Sets on the player.
-            //var playersInZone = ZoneManager.GetZone(player.Position.X, player.Position.Z, player.Position.Level).Players;
+            var playersInZone = ZoneManager.GetZone(player.Position.X, player.Position.Z, player.Position.Level).Players;
 
-            //bitBlock.pBits(8, playersInZone.Count);//player count
+            bitBlock.pBits(8, playersInZone.Count - 1);//player count
 
             //foreach (var p in playersInZone)
             //{
@@ -61,10 +61,14 @@ namespace Silvarea.Game.Entities
             //    bitBlock.p1((byte)curPlayer.UpdateMasks);
             //    AppearanceUpdate(curPlayer, byteBlock);
             //}
-            //bitBlock.pBits(11, 2047);
+            bitBlock.pBits(11, 2047);
             bitBlock.closeBitBuffer();
-            bitBlock.pdata(byteBlock.toByteArray(), (int) byteBlock.Length);
-            player.Send(bitBlock);
+            byteBlock.pdata(bitBlock.toByteArray(), (int) bitBlock.Length);
+
+            byteBlock.p1(0x40);
+			AppearanceUpdate(player, byteBlock);
+
+			player.Send(byteBlock);
 
             //AppearanceUpdate(player, updatePacket);
 
@@ -96,20 +100,30 @@ namespace Silvarea.Game.Entities
         private static void AppearanceUpdate(Player player, Packet packet)
         {
             Packet subPacket = new Packet();
-            subPacket.p1(0);//Gender
-            subPacket.p1(1);//Head Icons
-            subPacket.p1(0);//Skull Icon
+            subPacket.p1(0); //Gender
+            subPacket.p1(0); //Skull Icons
+            subPacket.p1(1); //Head Icons
 
-            //TODO Check if player isNpc
+			//TODO Check if player isNpc
 
-            byte[] defaultAppearance = [0, 0, 0, 0, 18, 0, 26, 36, 0, 33, 42, 0];
+//			this.body = [
+        //	0, // hair
+//            10, // beard
+//            18, // body
+//            26, // arms
+//            33, // gloves
+//            36, // legs
+//            42 // boots
+//];
 
-            for (int i = 0; i < 12; i++) //TODO Equipment Slots
+			int[] defaultAppearance = [0, 2, 0, 0, 18, 0, 26, 36, 0, 33, 42, 10];
+
+            for (int i = 0; i < defaultAppearance.Length; i++) //TODO Equipment Slots
             {
                 if (defaultAppearance[i] < 1)
                     subPacket.p1(defaultAppearance[i]);
                 else
-                    subPacket.p2(defaultAppearance[i]);
+                    subPacket.p2(0x100 + defaultAppearance[i]);
             }
 
             subPacket.p1(0);//hair color
@@ -126,13 +140,14 @@ namespace Silvarea.Game.Entities
             subPacket.p2(0x336);
             subPacket.p2(0x338);
 
+            // Username37 is borked?
             subPacket.p8(player.Username37);
 
             subPacket.p1(3); // combat level
             subPacket.p2(1); // skill level
 
             packet.p1_alt3((byte) subPacket.Length);
-            packet.pdata(subPacket.toByteArray(), (int)subPacket.Length);
+            packet.pdata_alt1(subPacket.toByteArray());
         }
 
         private static void UpdatePlayerMovement(Player player, Packet packet)
