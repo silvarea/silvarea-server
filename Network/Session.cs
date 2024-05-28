@@ -6,6 +6,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Threading;
 using Silvarea.Utility;
 using Silvarea.Network.Codec;
+using Silvarea.Game;
 
 namespace Silvarea.Network
 {
@@ -56,6 +57,8 @@ namespace Silvarea.Network
 
         public RS2ConnectionState CurrentState { get; set; }
 
+        public Guid SessionId { get; set; }
+
         // TODO: Add a reference to a player class whenever that exists.
         public Session(Socket socket)
         {
@@ -63,6 +66,7 @@ namespace Silvarea.Network
             Socket = socket;
             EndPoint = Socket.RemoteEndPoint;
             Stream = new NetworkStream(socket, ownsSocket: true);
+            SessionId = new Guid();
         }
 
         public void Start()
@@ -85,8 +89,14 @@ namespace Silvarea.Network
             {
                 Console.WriteLine(ex.ToString());
                 SocketManager.Disconnect(this);
-            }
 
+                var player = World.Players.Find(p => p.Session.SessionId == SessionId);
+                
+                if (player != null)
+                {
+                    World.Unregister(player);
+                }
+            }
         }
 
         private void OnDataReceive(IAsyncResult result)
@@ -107,6 +117,7 @@ namespace Silvarea.Network
             {
                 Console.WriteLine("Some error: " + ex.Message);
                 SocketManager.Disconnect(this);
+                //TODO Deregister player if any
                 return;
             }
             if (received == 0)

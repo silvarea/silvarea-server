@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Silvarea.Game.Entities;
 using Silvarea.Utility;
@@ -10,11 +11,16 @@ namespace Silvarea.Game
 {
     public class World
     {
-        public static List<Player> Players {  get; set; } = new List<Player>(2000);
+        public static List<Player> Players { get; set; } = new List<Player>(2000);
+
+        long _tickLength = 600;
+        long currentTick = 0;
+        long lastTick = 0;
+        public Timer WorldTimer {get;}
         
         public World()
         {
-            //initialize 600ms game tick
+			WorldTimer = new Timer(Tick, null, 0, 600);
         }
 
         public static Player getPlayerByUid(long uid)
@@ -40,5 +46,18 @@ namespace Silvarea.Game
             return player;
         }
 
+        public static void Unregister(Player player)
+        {
+            Players.Remove(player);
+            //TODO Some saving stuff
+        }
+
+        public static void Tick(Object stateInfo)
+        {
+            foreach (Player p in Players)
+            {
+                PlayerSync.Update(p);
+            }
+        }
     }
 }

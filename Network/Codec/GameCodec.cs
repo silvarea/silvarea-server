@@ -51,6 +51,7 @@ namespace Silvarea.Network.Codec
 
             int opcode = (packet.g1() - session.inCipher.val()) & 0xff;
             readableBytes -= 1;
+            Console.WriteLine($"Incoming Packet Opcode = " + opcode);
 
             int expectedSize = ConfigurationManager.Config.PacketSizes.IncomingPackets[opcode];//load in packet size array thru config load (io.json). Unfortunately, I don't think this one is in the client, but this will try to handle unknowns. The risk is if the client sends more than one packet in a stream, which I don't think it will do.
 

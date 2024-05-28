@@ -1,6 +1,7 @@
 ﻿using Silvarea.Network;
 using Silvarea.Cache;
 using Silvarea.Utility;
+using Silvarea.Game;
 
 namespace Silvarea
 {
@@ -14,6 +15,8 @@ namespace Silvarea
 			TestingShit();
 
 			UpdateServer.init(ConfigurationManager.Config.GameServerConfiguration.CachePath);
+
+			new World();
 
 			SocketManager socketManager = new SocketManager();
 
